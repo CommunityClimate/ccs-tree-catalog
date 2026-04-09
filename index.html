@@ -1161,6 +1161,13 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       <div style="margin-top:5px">
         <button class="btn btn-secondary" onclick="clearFilters()" style="width:100%;font-size:9px">Clear filters</button>
       </div>
+      <div style="margin-top:6px">
+        <button class="btn" id="btnShowOverlaps" onclick="showOverlapPanel()" style="display:none;
+          width:100%;font-size:9px;background:rgba(167,139,250,0.1);color:var(--purple);
+          border:1px solid rgba(167,139,250,0.3);font-weight:700;letter-spacing:0.5px">
+          ⧖ Overlapping fields <span id="overlapFilterCount" style="font-weight:800"></span>
+        </button>
+      </div>
     </div>
 
     <!-- Excluded Fields — collapsible -->
@@ -1288,7 +1295,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     </div>
 
     <!-- ── EXCEPTIONS VIEW ───────────────────────────────────────────────── -->
-    <div class="view" id="view-exceptions">
+    <div class="view" id="view-exceptions" style="overflow-y:auto;flex-direction:column;padding:12px 16px;gap:10px">
 
       <!-- Why errors banner -->
       <div onclick="openWhyErrors()" style="display:flex;align-items:center;gap:14px;
@@ -3215,6 +3222,26 @@ async function detectOverlappingFields() {
   }).join('');
 
   panel.style.display = '';
+
+  // Show sidebar filter button
+  const sideBtn = document.getElementById('btnShowOverlaps');
+  if (sideBtn) {
+    sideBtn.style.display = '';
+    document.getElementById('overlapFilterCount').textContent = `(${pairs.length}${pairs.length >= MAX_PAIRS ? '+' : ''})`;
+  }
+}
+
+function showOverlapPanel() {
+  switchTab('exceptions');
+  setTimeout(() => {
+    const panel = document.getElementById('overlapPanel');
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Flash highlight
+      panel.style.outline = '2px solid var(--purple)';
+      setTimeout(() => panel.style.outline = '', 1800);
+    }
+  }, 200);
 }
 
 // jumpToField — switch to Field Map tab and select the field
@@ -3616,6 +3643,10 @@ function clearAll() {
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnExport').disabled = true;
   document.getElementById('filterSection').style.display = 'none';
+  const sideOvBtn = document.getElementById('btnShowOverlaps');
+  if (sideOvBtn) sideOvBtn.style.display = 'none';
+  const ovPanel = document.getElementById('overlapPanel');
+  if (ovPanel) ovPanel.style.display = 'none';
   document.getElementById('fieldList').innerHTML =
     '<div class="empty-state" style="padding:20px 12px">Upload files and run allocation to see fields</div>';
   document.getElementById('catalogBody').innerHTML =
