@@ -1360,7 +1360,8 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     </div>
 
     <!-- ── EXCEPTIONS VIEW ───────────────────────────────────────────────── -->
-    <div class="view" id="view-exceptions" style="overflow-y:auto;flex-direction:column;padding:12px 16px;gap:10px">
+    <div class="view" id="view-exceptions">
+      <div id="excInner" style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px">
 
       <!-- Why errors banner -->
       <div onclick="openWhyErrors()" style="display:flex;align-items:center;gap:14px;
@@ -1461,7 +1462,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       </div>
 
       <!-- Exceptions table reuses catalog logic with exception filter -->
-      <div class="catalog-table-wrap" style="flex:1">
+      <div class="catalog-table-wrap">
         <table class="catalog" id="excTable">
           <thead>
             <tr>
@@ -1481,7 +1482,8 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
           </tbody>
         </table>
       </div>
-    </div>
+      </div><!-- end excInner -->
+    </div><!-- end view-exceptions -->
 
     <!-- ── WORK QUEUE VIEW ───────────────────────────────────────────────────── -->
     <div class="view" id="view-workqueue">
@@ -1518,152 +1520,6 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       </div>
     </div>
 
-    <!-- ── WHY ERRORS VIEW ──────────────────────────────────────────────────── -->
-    <div class="view" id="view-why" style="overflow-y:auto">
-      <div style="max-width:900px;margin:0 auto;padding:2rem 2rem 3rem">
-
-        <!-- Hero -->
-        <div style="text-align:center;padding:2rem 1rem 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem">
-          <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:0.75rem">Plain language guide — for the whole team</div>
-          <div style="font-size:22px;font-weight:600;color:var(--text);line-height:1.35;max-width:580px;margin:0 auto 1rem">Why do trees appear outside their field polygons?</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.7;max-width:520px;margin:0 auto">The GPS coordinates recorded by field officers are correct. The boundaries drawn around the fields are not always in the right place.</div>
-        </div>
-
-        <!-- KPI row — populated live from allocation data -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2.5rem">
-          <div style="background:var(--card);border:1px solid var(--red-b);border-radius:6px;padding:1rem;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:var(--red);font-family:var(--font-mono)" id="why-outside-n">—</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Trees outside<br>all polygons</div>
-          </div>
-          <div style="background:var(--card);border:1px solid var(--amber-b);border-radius:6px;padding:1rem;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:var(--amber);font-family:var(--font-mono)" id="why-mismatch-n">—</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Inside wrong<br>polygon</div>
-          </div>
-          <div style="background:var(--card);border:1px solid var(--amber-b);border-radius:6px;padding:1rem;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:var(--amber);font-family:var(--font-mono)">99.8%</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Caused by wrong<br>boundary placement</div>
-          </div>
-          <div style="background:var(--card);border:1px solid var(--green-b);border-radius:6px;padding:1rem;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:var(--green);font-family:var(--font-mono)" id="why-suspect-n">—</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Fields needing<br>boundary correction</div>
-          </div>
-        </div>
-
-        <!-- Cause cards -->
-        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1.25rem">The three causes — ranked by frequency</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2.5rem">
-
-          <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--red);border-radius:6px;padding:1.25rem">
-            <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Cause 1 — most common</div>
-            <div style="font-size:30px;font-weight:700;color:var(--red);font-family:var(--font-mono);line-height:1;margin-bottom:.5rem">99.8%</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.6rem">Boundary drawn in the wrong place</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1rem">The field polygon was drawn incorrectly — too far away, too small, or at the wrong location entirely. Every tree in that field appears outside, even though the trees are exactly where they were planted.</div>
-            <div style="background:var(--red-bg);border:1px solid var(--red-b);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--red);font-weight:600">Fix: redraw the boundary in the Polygon Corrector</div>
-          </div>
-
-          <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:6px;padding:1.25rem">
-            <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Cause 2 — rare</div>
-            <div style="font-size:30px;font-weight:700;color:var(--blue);font-family:var(--font-mono);line-height:1;margin-bottom:.5rem">&lt; 1%</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.6rem">GPS reading had high error</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1rem">The phone's GPS was inaccurate at the moment of recording — heavy forest cover or an unsettled satellite lock. The tree lands slightly outside a correctly drawn boundary.</div>
-            <div style="background:var(--blue-bg);border:1px solid var(--blue-b);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--blue);font-weight:600">Fix: check GPS accuracy reading in Fieldforce</div>
-          </div>
-
-          <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--green);border-radius:6px;padding:1.25rem">
-            <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Cause 3 — data entry</div>
-            <div style="font-size:30px;font-weight:700;color:var(--green);font-family:var(--font-mono);line-height:1;margin-bottom:.5rem">0.2%</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.6rem">Field ID not recorded at planting</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1rem">The field officer did not select a field name when recording the tree. The system finds the nearest polygon but can't confirm it's correct, so it flags the tree for review.</div>
-            <div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--green);font-weight:600">Fix: fill in missing field ID in Fieldforce</div>
-          </div>
-
-        </div>
-
-        <!-- Diagrams -->
-        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1.25rem">What this looks like on the ground</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2.5rem">
-          <div>
-            <div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:1rem">
-              <svg width="100%" viewBox="0 0 300 180">
-                <rect x="50" y="15" width="200" height="145" rx="4" fill="rgba(34,197,94,0.07)" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="6,4"/>
-                <circle cx="110" cy="65" r="7" fill="#22c55e"/><text x="110" y="69" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">1</text>
-                <circle cx="148" cy="50" r="7" fill="#22c55e"/><text x="148" y="54" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">2</text>
-                <circle cx="188" cy="70" r="7" fill="#22c55e"/><text x="188" y="74" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">3</text>
-                <circle cx="125" cy="105" r="7" fill="#22c55e"/><text x="125" y="109" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">4</text>
-                <circle cx="170" cy="118" r="7" fill="#22c55e"/><text x="170" y="122" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">5</text>
-                <circle cx="205" cy="98" r="7" fill="#22c55e"/><text x="205" y="102" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">6</text>
-                <text x="150" y="172" text-anchor="middle" font-size="11" fill="#22c55e" font-family="monospace" font-weight="600">All 6 trees inside ✓  Allocated</text>
-              </svg>
-            </div>
-            <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:.6rem;line-height:1.5"><strong style="color:var(--text)">Correct boundary.</strong> Polygon drawn at the true field location. All trees land inside.</div>
-          </div>
-          <div>
-            <div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:1rem">
-              <svg width="100%" viewBox="0 0 300 180">
-                <rect x="175" y="15" width="110" height="145" rx="4" fill="rgba(239,68,68,0.06)" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4"/>
-                <text x="230" y="90" text-anchor="middle" font-size="10" fill="#ef4444" font-family="monospace">Polygon drawn</text>
-                <text x="230" y="105" text-anchor="middle" font-size="10" fill="#ef4444" font-family="monospace">200m too far right</text>
-                <circle cx="68" cy="65" r="7" fill="#ef4444"/><text x="68" y="69" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">1</text>
-                <circle cx="105" cy="50" r="7" fill="#ef4444"/><text x="105" y="54" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">2</text>
-                <circle cx="88" cy="98" r="7" fill="#ef4444"/><text x="88" y="102" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">3</text>
-                <circle cx="130" cy="115" r="7" fill="#ef4444"/><text x="130" y="119" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">4</text>
-                <circle cx="55" cy="128" r="7" fill="#ef4444"/><text x="55" y="132" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">5</text>
-                <circle cx="118" cy="78" r="7" fill="#ef4444"/><text x="118" y="82" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">6</text>
-                <line x1="142" y1="88" x2="172" y2="88" stroke="#6b88a8" stroke-width="1" stroke-dasharray="4,3"/>
-                <text x="150" y="172" text-anchor="middle" font-size="11" fill="#ef4444" font-family="monospace" font-weight="600">All 6 trees outside ✗  Outside polygon</text>
-              </svg>
-            </div>
-            <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:.6rem;line-height:1.5"><strong style="color:var(--text)">Wrong boundary.</strong> Same 6 trees, same correct GPS. Polygon placed 200m away. Trees are fine. Boundary needs fixing.</div>
-          </div>
-        </div>
-
-        <!-- Simple rule -->
-        <div style="background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:1rem 1.25rem;font-size:14px;line-height:1.7;color:var(--text);margin-bottom:2rem">
-          When <strong>every tree in a field</strong> is flagged — the polygon boundary is wrong, not the trees. When <strong>only one or two trees</strong> are flagged in an otherwise clean field — those specific GPS readings may need checking.
-        </div>
-
-        <!-- Why algorithm is not the problem -->
-        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1rem">Why the algorithm is not the problem</div>
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:2rem">
-          <div style="display:flex;gap:12px;margin-bottom:.9rem;align-items:flex-start">
-            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></div>
-            <div style="font-size:13px;color:var(--muted);line-height:1.65"><strong style="color:var(--text)">The matching is mathematically exact.</strong> The system checks whether a GPS point is inside a boundary. There is no estimation or guesswork — it is a precise yes or no answer.</div>
-          </div>
-          <div style="display:flex;gap:12px;margin-bottom:.9rem;align-items:flex-start">
-            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></div>
-            <div style="font-size:13px;color:var(--muted);line-height:1.65"><strong style="color:var(--text)">Tree GPS coordinates are recorded once, on the ground, at the moment of planting.</strong> They do not change. They are the most reliable piece of data in the system.</div>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start">
-            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></div>
-            <div style="font-size:13px;color:var(--muted);line-height:1.65"><strong style="color:var(--text)">Polygon boundaries are drawn separately, later, often by someone not at the field.</strong> That is where errors enter. Fixing the boundaries fixes the error rate — no changes to tree records or GPS data needed.</div>
-          </div>
-        </div>
-
-        <!-- What to do next -->
-        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1rem">What to do next</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem">
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--red);margin-bottom:.5rem">1</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.4rem">Open the Work Queue</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:.75rem">Fields are listed with the highest tree counts first — fixing one large field resolves thousands of flagged trees at once.</div>
-            <button onclick="switchTab('workqueue')" style="background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);letter-spacing:.5px">Open Work Queue →</button>
-          </div>
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem">
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--amber);margin-bottom:.5rem">2</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.4rem">Redraw the boundary</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:.75rem">Click Map on any Work Queue item to see where the boundary sits. Use the Polygon Corrector to redraw it in the correct location and save back to Fieldforce.</div>
-            <a href="https://communityclimate.github.io/ccs-polygon-corrector/" target="_blank" style="background:var(--amber-bg);border:1px solid var(--amber-b);color:var(--amber);border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);letter-spacing:.5px;text-decoration:none;display:inline-block">Open Polygon Corrector →</a>
-          </div>
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem">
-            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--green);margin-bottom:.5rem">3</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.4rem">Re-run allocation</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:.75rem">After correcting boundaries, re-run allocation. Fields that drop below the mismatch threshold automatically move to "Verified clean" in the Work Queue — no manual update needed.</div>
-            <button onclick="switchTab('catalog')" style="background:var(--green-bg);border:1px solid var(--green-b);color:var(--green);border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);letter-spacing:.5px">Back to catalog →</button>
-          </div>
-        </div>
-
-      </div>
-    </div><!-- end view-why -->
 
 
   </div>
@@ -3305,15 +3161,13 @@ function showOverlapPanel() {
   switchTab('exceptions');
   setTimeout(() => {
     const panel = document.getElementById('overlapPanel');
-    const view  = document.getElementById('view-exceptions');
-    if (panel && view) {
-      // Scroll the view container to the panel's offsetTop
-      view.scrollTo({ top: panel.offsetTop - 12, behavior: 'smooth' });
-      // Flash highlight
+    const inner = document.getElementById('excInner');
+    if (panel && inner) {
+      inner.scrollTo({ top: panel.offsetTop - 12, behavior: 'smooth' });
       panel.style.outline = '2px solid var(--purple)';
       setTimeout(() => panel.style.outline = '', 1800);
     }
-  }, 250);
+  }, 350);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3685,9 +3539,11 @@ function exportCSV() {
 let exceptionsBuilt = false; // flag — only build once per allocation run
 
 function switchTab(tab, pushState = true) {
-  ['catalog','map','exceptions','workqueue','why'].forEach(t => {
-    document.getElementById(`view-${t}`).classList.toggle('active', t === tab);
-    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  ['catalog','map','exceptions','workqueue'].forEach(t => {
+    const view = document.getElementById(`view-${t}`);
+    const tabEl = document.getElementById(`tab-${t}`);
+    if (view)  view.classList.toggle('active', t === tab);
+    if (tabEl) tabEl.classList.toggle('active', t === tab);
   });
   if (tab === 'map' && map) {
     setTimeout(() => map.invalidateSize(), 100);
@@ -3706,16 +3562,6 @@ function switchTab(tab, pushState = true) {
     buildExceptionsAsync();
   }
   // Populate live KPIs on Why Errors tab
-  if (tab === 'why' && allocation.length) {
-    const outside  = allocation.filter(r => r.status === 'outside').length;
-    const mismatch = allocation.filter(r => r.status === 'mismatch').length;
-    const suspect  = suspectFieldStats.length || 0;
-    const fmt = n => n.toLocaleString();
-    const el = id => document.getElementById(id);
-    if (el('why-outside-n'))  el('why-outside-n').textContent  = fmt(outside);
-    if (el('why-mismatch-n')) el('why-mismatch-n').textContent = fmt(mismatch);
-    if (el('why-suspect-n'))  el('why-suspect-n').textContent  = suspect > 0 ? fmt(suspect) : '—';
-  }
   if (pushState) {
     history.pushState({ tab }, '', `?tab=${tab}`);
   }
