@@ -3305,13 +3305,15 @@ function showOverlapPanel() {
   switchTab('exceptions');
   setTimeout(() => {
     const panel = document.getElementById('overlapPanel');
-    if (panel) {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const view  = document.getElementById('view-exceptions');
+    if (panel && view) {
+      // Scroll the view container to the panel's offsetTop
+      view.scrollTo({ top: panel.offsetTop - 12, behavior: 'smooth' });
       // Flash highlight
       panel.style.outline = '2px solid var(--purple)';
       setTimeout(() => panel.style.outline = '', 1800);
     }
-  }, 200);
+  }, 250);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
