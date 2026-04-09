@@ -21,7 +21,7 @@
   --border:   #1f2e42;
   --border2:  #263548;
   --text:     #d4e4f7;
-  --muted:    #4a6480;
+  --muted:    #6b88a8;
   --faint:    #1e3050;
 
   --green:    #22c55e;
@@ -66,6 +66,7 @@ header {
 }
 .logo {
   display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0; min-width: 0; overflow: visible;
 }
 .logo-icon {
   width: 28px; height: 28px; background: var(--green);
@@ -74,13 +75,15 @@ header {
 }
 .logo-text {
   font-family: var(--font-mono);
-  font-size: 12px; font-weight: 700;
-  letter-spacing: 2px; color: var(--text);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--text);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .logo-sub {
   font-size: 10px; color: var(--muted);
   letter-spacing: 1px; font-family: var(--font-mono);
+  white-space: nowrap;
 }
 .header-divider { width: 1px; height: 24px; background: var(--border); }
 .header-spacer { flex: 1; }
@@ -95,7 +98,7 @@ header {
   border-radius: 4px; padding: 3px 10px;
   font-family: var(--font-mono); font-size: 11px;
 }
-.kpi-chip .kv { font-weight: 700; font-size: 13px; }
+.kpi-chip .kv { font-weight: 700; font-size: 14px; }
 .kpi-chip .kl { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
 .kpi-chip.green { border-color: var(--green-b); background: var(--green-bg); }
 .kpi-chip.green .kv { color: var(--green); }
@@ -117,8 +120,8 @@ header {
 }
 .tab {
   padding: 8px 16px;
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 1px; text-transform: uppercase;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
   color: var(--muted); cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.15s;
@@ -137,16 +140,31 @@ header {
   background: var(--panel);
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
+  overflow: hidden; /* no scroll on sidebar itself */
+}
+/* Upper scrollable zone — all controls */
+.sidebar-scroll {
+  flex-shrink: 0;
   overflow-y: auto;
+  max-height: 55vh; /* takes up to 55% of viewport, leaves room for field list */
+  border-bottom: 2px solid var(--border2);
 }
 .sb-section {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
 }
+/* Field list zone — always visible, fills remaining space */
+.sidebar-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 120px;
+}
 .sb-label {
   font-family: var(--font-mono);
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 2px; color: var(--muted);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--muted);
   text-transform: uppercase; display: block;
   margin-bottom: 6px;
 }
@@ -167,7 +185,7 @@ header {
 }
 .upload-icon { font-size: 20px; margin-bottom: 4px; }
 .upload-text { font-size: 10px; color: var(--muted); line-height: 1.5; }
-.upload-status { margin-top: 5px; font-size: 10px; font-family: var(--font-mono); }
+.upload-status { margin-top: 5px; font-size: 11px; font-family: var(--font-mono); }
 .upload-status.ok  { color: var(--green); }
 .upload-status.err { color: var(--red); }
 
@@ -180,7 +198,7 @@ select, input[type=text] {
   flex: 1; background: var(--bg);
   border: 1px solid var(--border); border-radius: 4px;
   color: var(--text); font-family: var(--font-mono);
-  font-size: 10px; padding: 5px 7px; outline: none;
+  font-size: 11px; padding: 5px 7px; outline: none;
   transition: border-color 0.2s;
 }
 select:focus, input[type=text]:focus { border-color: var(--green); }
@@ -216,10 +234,10 @@ select option { background: var(--panel); }
 .field-item:hover { background: var(--card); }
 .field-item.active { background: var(--green-bg); border-left: 3px solid var(--green); }
 .fi-id {
-  font-family: var(--font-mono); font-size: 10px;
+  font-family: var(--font-mono); font-size: 11px;
   color: var(--green); font-weight: 700; flex: 1;
 }
-.fi-owner { font-size: 10px; color: var(--muted); }
+.fi-owner { font-size: 11px; color: var(--muted); }
 .fi-count {
   font-family: var(--font-mono); font-size: 10px;
   background: var(--green-bg); color: var(--green);
@@ -248,7 +266,7 @@ select option { background: var(--panel); }
 .catalog-table-wrap { flex: 1; overflow-y: auto; }
 table.catalog {
   width: 100%; border-collapse: collapse;
-  font-size: 11px; font-family: var(--font-mono);
+  font-size: 12px; font-family: var(--font-mono);
 }
 table.catalog thead {
   position: sticky; top: 0; z-index: 10;
@@ -256,7 +274,7 @@ table.catalog thead {
 }
 table.catalog th {
   padding: 8px 10px; text-align: left;
-  font-size: 9px; font-weight: 700;
+  font-size: 10px; font-weight: 700;
   letter-spacing: 1.5px; color: var(--muted);
   text-transform: uppercase;
   border-bottom: 1px solid var(--border);
@@ -266,9 +284,10 @@ table.catalog th {
 table.catalog th:hover { color: var(--text); }
 table.catalog th.sorted { color: var(--green); }
 table.catalog td {
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  font-size: 12px;
 }
 table.catalog tr:hover td { background: var(--card); }
 table.catalog tr.selected td { background: var(--green-bg); }
@@ -276,9 +295,9 @@ table.catalog tr.selected td { background: var(--green-bg); }
 /* Status badges */
 .badge {
   display: inline-flex; align-items: center;
-  padding: 2px 7px; border-radius: 3px;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 0.5px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 3px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.3px; white-space: nowrap;
 }
 .badge.allocated    { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
 .badge.mismatch     { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-b); }
@@ -337,7 +356,7 @@ table.catalog tr.selected td { background: var(--green-bg); }
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 4px; font-size: 11px;
 }
-.mop-label { color: var(--muted); font-size: 10px; }
+.mop-label { color: var(--muted); font-size: 11px; }
 .mop-value { font-family: var(--font-mono); font-weight: 700; }
 .mop-value.green { color: var(--green); }
 .mop-value.red   { color: var(--red); }
@@ -576,6 +595,265 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
   border-radius: 4px; font-family: var(--font-mono);
   font-size: 10px; color: var(--red); line-height: 1.5;
 }
+
+/* Clickable field ID in catalog table */
+.field-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  transition: color 0.15s, opacity 0.15s;
+}
+.field-link:hover {
+  opacity: 0.75;
+  text-decoration-style: solid;
+}
+.field-link.tree-field  { color: var(--muted); }
+.field-link.matched-field { color: var(--green); }
+
+/* ── USER HANDBOOK ──────────────────────────────────────────────────────────── */
+.handbook-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(8,12,16,0.7);
+  display: none; align-items: flex-start; justify-content: flex-end;
+  backdrop-filter: blur(3px);
+}
+.handbook-overlay.open { display: flex; }
+.handbook-drawer {
+  width: 520px; height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+  animation: slideInRight 0.2s ease;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.hb-header {
+  padding: 14px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.hb-title {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; color: var(--green); text-transform: uppercase; flex: 1;
+}
+.hb-close {
+  background: var(--border); border: none; color: var(--text);
+  width: 28px; height: 28px; border-radius: 4px; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.hb-close:hover { background: var(--red); color: #fff; }
+.hb-search {
+  padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.hb-search input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text); font-family: var(--font-mono);
+  font-size: 11px; padding: 6px 10px; outline: none;
+}
+.hb-search input:focus { border-color: var(--green); }
+.hb-nav {
+  padding: 8px 16px; border-bottom: 1px solid var(--border);
+  display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;
+}
+.hb-nav-btn {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--muted); border-radius: 3px; padding: 3px 8px;
+  cursor: pointer; transition: all 0.15s;
+}
+.hb-nav-btn:hover { border-color: var(--green); color: var(--green); }
+.hb-body { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
+.hb-section { margin-top: 24px; }
+.hb-section-title {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; color: var(--green); text-transform: uppercase;
+  border-bottom: 1px solid var(--green-b); padding-bottom: 6px; margin-bottom: 12px;
+}
+.hb-h3 {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  margin: 14px 0 6px; font-family: var(--font-sans);
+}
+.hb-p {
+  font-size: 11px; color: var(--muted); line-height: 1.7;
+  margin-bottom: 8px; font-family: var(--font-sans);
+}
+.hb-p strong { color: var(--text); }
+.hb-p .green { color: var(--green); font-weight: 700; }
+.hb-p .red   { color: var(--red);   font-weight: 700; }
+.hb-p .amber { color: var(--amber); font-weight: 700; }
+.hb-p .blue  { color: var(--blue);  font-weight: 700; }
+/* Legend table */
+.hb-legend { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+.hb-legend th {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+  padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: left;
+}
+.hb-legend td {
+  padding: 6px 8px; border-bottom: 1px solid var(--faint);
+  font-size: 11px; vertical-align: middle;
+}
+.hb-legend tr:hover td { background: var(--card); }
+.hb-step {
+  display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start;
+}
+.hb-step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--green); color: #000; font-weight: 800;
+  font-size: 10px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px; font-family: var(--font-mono);
+}
+.hb-step-text { font-size: 11px; color: var(--muted); line-height: 1.6; font-family: var(--font-sans); }
+.hb-step-text strong { color: var(--text); }
+.hb-tip {
+  background: var(--green-bg); border: 1px solid var(--green-b);
+  border-radius: 5px; padding: 8px 12px; margin: 8px 0;
+  font-size: 11px; color: var(--text); line-height: 1.6; font-family: var(--font-sans);
+}
+.hb-warn {
+  background: var(--amber-bg); border: 1px solid var(--amber-b);
+  border-radius: 5px; padding: 8px 12px; margin: 8px 0;
+  font-size: 11px; color: var(--text); line-height: 1.6; font-family: var(--font-sans);
+}
+/* Highlight search matches */
+.hb-highlight { background: rgba(245,158,11,0.3); border-radius: 2px; }
+
+/* ── WORK QUEUE ──────────────────────────────────────────────────────────────*/
+.wq-toolbar {
+  padding: 10px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.wq-toolbar select, .wq-toolbar input {
+  font-size: 10px; padding: 5px 8px; height: 28px;
+}
+.wq-stats {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.wq-stat {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 12px;
+  font-family: var(--font-mono); font-size: 10px;
+  display: flex; align-items: center; gap: 7px;
+}
+.wq-stat .wsn { font-size: 15px; font-weight: 800; }
+.wq-stat.pending  { border-color: var(--red-b);   background: var(--red-bg);   }
+.wq-stat.pending  .wsn { color: var(--red); }
+.wq-stat.progress { border-color: var(--amber-b); background: var(--amber-bg); }
+.wq-stat.progress .wsn { color: var(--amber); }
+.wq-stat.done     { border-color: var(--green-b); background: var(--green-bg); }
+.wq-stat.done     .wsn { color: var(--green); }
+.wq-stat.clean    { border-color: var(--blue-b);  background: var(--blue-bg);  }
+.wq-stat.clean    .wsn { color: var(--blue); }
+.wq-list { flex: 1; overflow-y: auto; padding: 10px 14px; }
+.wq-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 7px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  transition: border-color 0.15s;
+}
+.wq-card:hover { border-color: var(--border2); }
+.wq-card.status-pending  { border-left: 3px solid var(--red); }
+.wq-card.status-progress { border-left: 3px solid var(--amber); }
+.wq-card.status-done     { border-left: 3px solid var(--green); opacity: 0.7; }
+.wq-card.status-clean    { border-left: 3px solid var(--blue); opacity: 0.6; }
+.wq-card-left { min-width: 0; }
+.wq-card-top {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap;
+}
+.wq-field-id {
+  font-family: var(--font-mono); font-size: 11px;
+  font-weight: 700; color: var(--blue); cursor: pointer;
+}
+.wq-field-id:hover { text-decoration: underline; }
+.wq-owner { font-size: 10px; color: var(--muted); }
+.wq-zone  { font-size: 9px; font-family: var(--font-mono);
+            background: var(--faint); color: var(--muted);
+            padding: 1px 6px; border-radius: 3px; }
+.wq-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.wq-rate-bar {
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.wq-rate-track {
+  width: 48px; height: 4px; background: var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.wq-rate-fill { height: 100%; border-radius: 2px; background: var(--red); }
+.wq-rate-fill.amber { background: var(--amber); }
+.wq-note-wrap { display: flex; gap: 6px; align-items: center; margin-top: 5px; }
+.wq-note {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 3px; color: var(--text); font-family: var(--font-sans);
+  font-size: 10px; padding: 4px 7px; outline: none; min-width: 0;
+}
+.wq-note:focus { border-color: var(--green); }
+.wq-note-save {
+  font-size: 9px; padding: 4px 8px;
+  background: var(--green-bg); color: var(--green);
+  border: 1px solid var(--green-b); border-radius: 3px;
+  cursor: pointer; font-family: var(--font-mono); font-weight: 700;
+  white-space: nowrap;
+}
+.wq-note-save:hover { background: var(--green); color: #000; }
+.wq-card-right {
+  display: flex; flex-direction: column; gap: 5px;
+  align-items: flex-end; flex-shrink: 0;
+}
+.wq-status-badge {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.5px; padding: 2px 8px; border-radius: 10px;
+  white-space: nowrap;
+}
+.wq-status-badge.pending  { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-b); }
+.wq-status-badge.progress { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-b); }
+.wq-status-badge.done     { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
+.wq-status-badge.clean    { background: var(--blue-bg);  color: var(--blue);  border: 1px solid var(--blue-b); }
+.wq-action-row { display: flex; gap: 4px; }
+.wq-btn {
+  font-size: 9px; padding: 3px 8px;
+  border-radius: 3px; cursor: pointer;
+  font-family: var(--font-mono); font-weight: 700;
+  border: 1px solid; transition: all 0.12s; white-space: nowrap;
+}
+.wq-btn.start  { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-b); }
+.wq-btn.start:hover  { background: var(--amber); color: #000; }
+.wq-btn.done   { background: var(--green-bg); color: var(--green); border-color: var(--green-b); }
+.wq-btn.done:hover   { background: var(--green); color: #000; }
+.wq-btn.reopen { background: var(--border); color: var(--muted); border-color: var(--border); }
+.wq-btn.reopen:hover { background: var(--border2); color: var(--text); }
+.wq-btn.map    { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-b); }
+.wq-btn.map:hover    { background: var(--blue); color: #000; }
+.wq-empty { color: var(--muted); font-family: var(--font-mono);
+            font-size: 11px; text-align: center; padding: 40px 20px; line-height: 2.5; }
+.wq-auto-tag {
+  font-size: 9px; font-family: var(--font-mono);
+  background: var(--blue-bg); color: var(--blue);
+  border: 1px solid var(--blue-b); border-radius: 3px;
+  padding: 1px 6px; margin-left: 4px;
+}
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -622,6 +900,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     <div class="kpi-chip amber"><span class="kv" id="kpiReview">—</span><span class="kl">Review</span></div>
   </div>
   <div class="header-spacer"></div>
+  <button class="btn" onclick="openHandbook()" style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:6px 12px">? Help</button>
   <button class="btn btn-amber" id="btnExport" onclick="exportCSV()" disabled>⬇ Export CSV</button>
   <button class="btn btn-blue" id="btnSaveDV" onclick="saveToFieldforce()" disabled
     style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b)">
@@ -675,6 +954,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
   <div class="tab active" onclick="switchTab('catalog')"   id="tab-catalog">📋 Tree Catalog</div>
   <div class="tab"         onclick="switchTab('map')"      id="tab-map">🗺 Field Map</div>
   <div class="tab"         onclick="switchTab('exceptions')" id="tab-exceptions">⚠ Exceptions</div>
+  <div class="tab"         onclick="switchTab('workqueue')"  id="tab-workqueue">📋 Work Queue <span id="wqBadge" style="display:none;background:var(--red);color:#000;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;margin-left:3px">0</span></div>
 </div>
 
 <!-- ── MAIN ──────────────────────────────────────────────────────────────── -->
@@ -682,6 +962,9 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
 
   <!-- SIDEBAR -->
   <div class="sidebar">
+
+    <!-- ── UPPER SCROLLABLE ZONE ── -->
+    <div class="sidebar-scroll">
 
     <!-- Upload Fields -->
     <div class="sb-section">
@@ -790,13 +1073,17 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       </div>
     </div>
 
-    <!-- Field list (for map view) -->
-    <div class="sb-section" style="padding-bottom:4px">
-      <span class="sb-label">Fields <span id="fieldListCount" style="color:var(--green)"></span></span>
-    </div>
-    <div class="field-list" id="fieldList">
-      <div class="empty-state" style="padding:20px 12px">Upload files and run allocation to see fields</div>
-    </div>
+    </div><!-- end sidebar-scroll -->
+
+    <!-- ── FIELD LIST ZONE — always visible ── -->
+    <div class="sidebar-fields">
+      <div class="sb-section" style="padding-bottom:4px;flex-shrink:0">
+        <span class="sb-label">Fields <span id="fieldListCount" style="color:var(--green)"></span></span>
+      </div>
+      <div class="field-list" id="fieldList">
+        <div class="empty-state" style="padding:20px 12px">Upload files and run allocation to see fields</div>
+      </div>
+    </div><!-- end sidebar-fields -->
 
   </div>
 
@@ -863,7 +1150,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     <div class="view" id="view-map">
       <div class="map-view-wrap">
         <div class="map-placeholder" id="mapPlaceholder">
-          Run allocation, then select a field<br>from the left panel to view its polygon and trees
+          Select a field from the left panel<br>to view its polygon and trees on the satellite map
         </div>
         <div id="map" style="display:none"></div>
         <!-- Stats overlay -->
@@ -888,7 +1175,26 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
 
     <!-- ── EXCEPTIONS VIEW ───────────────────────────────────────────────── -->
     <div class="view" id="view-exceptions">
-      <div class="exc-grid" id="excGrid">
+
+      <!-- Why errors banner -->
+      <div onclick="openWhyErrors()" style="display:flex;align-items:center;gap:14px;
+        background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:6px;
+        padding:12px 18px;margin-bottom:14px;cursor:pointer;transition:background .15s"
+        onmouseenter="this.style.background='rgba(245,158,11,0.14)'"
+        onmouseleave="this.style.background='var(--amber-bg)'">
+        <span style="font-size:18px">⚠</span>
+        <div style="flex:1">
+          <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;
+            color:var(--amber);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">
+            Why do we have these errors?
+          </div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">
+            99.8% of mismatches are caused by field boundaries drawn in the wrong place — not by incorrect tree coordinates. Click to read the plain-language explanation.
+          </div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--amber);
+          white-space:nowrap">Open guide →</span>
+      </div>
         <div class="exc-card red"    id="exc-outside"      onclick="filterException('Outside polygon')">
           <div class="ec-num" id="excN1">—</div>
           <div class="ec-label">Outside polygon</div>
@@ -964,6 +1270,189 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
         </table>
       </div>
     </div>
+
+    <!-- ── WORK QUEUE VIEW ───────────────────────────────────────────────────── -->
+    <div class="view" id="view-workqueue">
+      <div class="wq-toolbar">
+        <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--text);letter-spacing:1px;text-transform:uppercase">Polygon Correction Queue</span>
+        <select id="wqFltStatus" onchange="renderWorkQueue()" style="width:160px">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="progress">In Progress</option>
+          <option value="done">Done — awaiting verification</option>
+          <option value="clean">Auto-verified clean</option>
+        </select>
+        <select id="wqFltZone" onchange="renderWorkQueue()" style="width:140px">
+          <option value="">All zones</option>
+        </select>
+        <input type="text" id="wqSearch" placeholder="Search field ID or owner…"
+          oninput="renderWorkQueue()" style="width:200px"/>
+        <div style="flex:1"></div>
+        <button class="btn btn-secondary" onclick="exportWQcsv()" style="font-size:9px;padding:5px 10px">⬇ Export Queue</button>
+        <button class="btn btn-secondary" onclick="clearDoneItems()" style="font-size:9px;padding:5px 10px;color:var(--muted)">Clear Verified</button>
+      </div>
+      <div class="wq-stats">
+        <div class="wq-stat pending"><span class="wsn" id="wqNPending">0</span><span>Pending correction</span></div>
+        <div class="wq-stat progress"><span class="wsn" id="wqNProgress">0</span><span>In progress</span></div>
+        <div class="wq-stat done"><span class="wsn" id="wqNDone">0</span><span>Done — awaiting reload</span></div>
+        <div class="wq-stat clean"><span class="wsn" id="wqNClean">0</span><span>Auto-verified clean ✓</span></div>
+        <div style="flex:1"></div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);align-self:center">
+          Items auto-resolve on next allocation run when mismatch rate drops below threshold
+        </div>
+      </div>
+      <div class="wq-list" id="wqList">
+        <div class="wq-empty">Run allocation and exclude suspect fields<br>to populate the work queue</div>
+      </div>
+    </div>
+
+    <!-- ── WHY ERRORS VIEW ──────────────────────────────────────────────────── -->
+    <div class="view" id="view-why" style="overflow-y:auto">
+      <div style="max-width:900px;margin:0 auto;padding:2rem 2rem 3rem">
+
+        <!-- Hero -->
+        <div style="text-align:center;padding:2rem 1rem 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem">
+          <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:0.75rem">Plain language guide — for the whole team</div>
+          <div style="font-size:22px;font-weight:600;color:var(--text);line-height:1.35;max-width:580px;margin:0 auto 1rem">Why do trees appear outside their field polygons?</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7;max-width:520px;margin:0 auto">The GPS coordinates recorded by field officers are correct. The boundaries drawn around the fields are not always in the right place.</div>
+        </div>
+
+        <!-- KPI row — populated live from allocation data -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2.5rem">
+          <div style="background:var(--card);border:1px solid var(--red-b);border-radius:6px;padding:1rem;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:var(--red);font-family:var(--font-mono)" id="why-outside-n">—</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Trees outside<br>all polygons</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--amber-b);border-radius:6px;padding:1rem;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:var(--amber);font-family:var(--font-mono)" id="why-mismatch-n">—</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Inside wrong<br>polygon</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--amber-b);border-radius:6px;padding:1rem;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:var(--amber);font-family:var(--font-mono)">99.8%</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Caused by wrong<br>boundary placement</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--green-b);border-radius:6px;padding:1rem;text-align:center">
+            <div style="font-size:22px;font-weight:700;color:var(--green);font-family:var(--font-mono)" id="why-suspect-n">—</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;line-height:1.4">Fields needing<br>boundary correction</div>
+          </div>
+        </div>
+
+        <!-- Cause cards -->
+        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1.25rem">The three causes — ranked by frequency</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2.5rem">
+
+          <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--red);border-radius:6px;padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Cause 1 — most common</div>
+            <div style="font-size:30px;font-weight:700;color:var(--red);font-family:var(--font-mono);line-height:1;margin-bottom:.5rem">99.8%</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.6rem">Boundary drawn in the wrong place</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1rem">The field polygon was drawn incorrectly — too far away, too small, or at the wrong location entirely. Every tree in that field appears outside, even though the trees are exactly where they were planted.</div>
+            <div style="background:var(--red-bg);border:1px solid var(--red-b);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--red);font-weight:600">Fix: redraw the boundary in the Polygon Corrector</div>
+          </div>
+
+          <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:6px;padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Cause 2 — rare</div>
+            <div style="font-size:30px;font-weight:700;color:var(--blue);font-family:var(--font-mono);line-height:1;margin-bottom:.5rem">&lt; 1%</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.6rem">GPS reading had high error</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1rem">The phone's GPS was inaccurate at the moment of recording — heavy forest cover or an unsettled satellite lock. The tree lands slightly outside a correctly drawn boundary.</div>
+            <div style="background:var(--blue-bg);border:1px solid var(--blue-b);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--blue);font-weight:600">Fix: check GPS accuracy reading in Fieldforce</div>
+          </div>
+
+          <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--green);border-radius:6px;padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Cause 3 — data entry</div>
+            <div style="font-size:30px;font-weight:700;color:var(--green);font-family:var(--font-mono);line-height:1;margin-bottom:.5rem">0.2%</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.6rem">Field ID not recorded at planting</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:1rem">The field officer did not select a field name when recording the tree. The system finds the nearest polygon but can't confirm it's correct, so it flags the tree for review.</div>
+            <div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--green);font-weight:600">Fix: fill in missing field ID in Fieldforce</div>
+          </div>
+
+        </div>
+
+        <!-- Diagrams -->
+        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1.25rem">What this looks like on the ground</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2.5rem">
+          <div>
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:1rem">
+              <svg width="100%" viewBox="0 0 300 180">
+                <rect x="50" y="15" width="200" height="145" rx="4" fill="rgba(34,197,94,0.07)" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="6,4"/>
+                <circle cx="110" cy="65" r="7" fill="#22c55e"/><text x="110" y="69" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">1</text>
+                <circle cx="148" cy="50" r="7" fill="#22c55e"/><text x="148" y="54" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">2</text>
+                <circle cx="188" cy="70" r="7" fill="#22c55e"/><text x="188" y="74" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">3</text>
+                <circle cx="125" cy="105" r="7" fill="#22c55e"/><text x="125" y="109" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">4</text>
+                <circle cx="170" cy="118" r="7" fill="#22c55e"/><text x="170" y="122" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">5</text>
+                <circle cx="205" cy="98" r="7" fill="#22c55e"/><text x="205" y="102" text-anchor="middle" font-size="9" fill="#080c10" font-weight="700" font-family="monospace">6</text>
+                <text x="150" y="172" text-anchor="middle" font-size="11" fill="#22c55e" font-family="monospace" font-weight="600">All 6 trees inside ✓  Allocated</text>
+              </svg>
+            </div>
+            <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:.6rem;line-height:1.5"><strong style="color:var(--text)">Correct boundary.</strong> Polygon drawn at the true field location. All trees land inside.</div>
+          </div>
+          <div>
+            <div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:1rem">
+              <svg width="100%" viewBox="0 0 300 180">
+                <rect x="175" y="15" width="110" height="145" rx="4" fill="rgba(239,68,68,0.06)" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4"/>
+                <text x="230" y="90" text-anchor="middle" font-size="10" fill="#ef4444" font-family="monospace">Polygon drawn</text>
+                <text x="230" y="105" text-anchor="middle" font-size="10" fill="#ef4444" font-family="monospace">200m too far right</text>
+                <circle cx="68" cy="65" r="7" fill="#ef4444"/><text x="68" y="69" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">1</text>
+                <circle cx="105" cy="50" r="7" fill="#ef4444"/><text x="105" y="54" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">2</text>
+                <circle cx="88" cy="98" r="7" fill="#ef4444"/><text x="88" y="102" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">3</text>
+                <circle cx="130" cy="115" r="7" fill="#ef4444"/><text x="130" y="119" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">4</text>
+                <circle cx="55" cy="128" r="7" fill="#ef4444"/><text x="55" y="132" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">5</text>
+                <circle cx="118" cy="78" r="7" fill="#ef4444"/><text x="118" y="82" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" font-family="monospace">6</text>
+                <line x1="142" y1="88" x2="172" y2="88" stroke="#6b88a8" stroke-width="1" stroke-dasharray="4,3"/>
+                <text x="150" y="172" text-anchor="middle" font-size="11" fill="#ef4444" font-family="monospace" font-weight="600">All 6 trees outside ✗  Outside polygon</text>
+              </svg>
+            </div>
+            <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:.6rem;line-height:1.5"><strong style="color:var(--text)">Wrong boundary.</strong> Same 6 trees, same correct GPS. Polygon placed 200m away. Trees are fine. Boundary needs fixing.</div>
+          </div>
+        </div>
+
+        <!-- Simple rule -->
+        <div style="background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:1rem 1.25rem;font-size:14px;line-height:1.7;color:var(--text);margin-bottom:2rem">
+          When <strong>every tree in a field</strong> is flagged — the polygon boundary is wrong, not the trees. When <strong>only one or two trees</strong> are flagged in an otherwise clean field — those specific GPS readings may need checking.
+        </div>
+
+        <!-- Why algorithm is not the problem -->
+        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1rem">Why the algorithm is not the problem</div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:2rem">
+          <div style="display:flex;gap:12px;margin-bottom:.9rem;align-items:flex-start">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.65"><strong style="color:var(--text)">The matching is mathematically exact.</strong> The system checks whether a GPS point is inside a boundary. There is no estimation or guesswork — it is a precise yes or no answer.</div>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:.9rem;align-items:flex-start">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.65"><strong style="color:var(--text)">Tree GPS coordinates are recorded once, on the ground, at the moment of planting.</strong> They do not change. They are the most reliable piece of data in the system.</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px"></div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.65"><strong style="color:var(--text)">Polygon boundaries are drawn separately, later, often by someone not at the field.</strong> That is where errors enter. Fixing the boundaries fixes the error rate — no changes to tree records or GPS data needed.</div>
+          </div>
+        </div>
+
+        <!-- What to do next -->
+        <div style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:1rem">What to do next</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem">
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--red);margin-bottom:.5rem">1</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.4rem">Open the Work Queue</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:.75rem">Fields are listed with the highest tree counts first — fixing one large field resolves thousands of flagged trees at once.</div>
+            <button onclick="switchTab('workqueue')" style="background:var(--red-bg);border:1px solid var(--red-b);color:var(--red);border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);letter-spacing:.5px">Open Work Queue →</button>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem">
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--amber);margin-bottom:.5rem">2</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.4rem">Redraw the boundary</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:.75rem">Click Map on any Work Queue item to see where the boundary sits. Use the Polygon Corrector to redraw it in the correct location and save back to Fieldforce.</div>
+            <a href="https://communityclimate.github.io/ccs-polygon-corrector/" target="_blank" style="background:var(--amber-bg);border:1px solid var(--amber-b);color:var(--amber);border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);letter-spacing:.5px;text-decoration:none;display:inline-block">Open Polygon Corrector →</a>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem">
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--green);margin-bottom:.5rem">3</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:.4rem">Re-run allocation</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:.75rem">After correcting boundaries, re-run allocation. Fields that drop below the mismatch threshold automatically move to "Verified clean" in the Work Queue — no manual update needed.</div>
+            <button onclick="switchTab('catalog')" style="background:var(--green-bg);border:1px solid var(--green-b);color:var(--green);border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);letter-spacing:.5px">Back to catalog →</button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end view-why -->
+
 
   </div>
 </div>
@@ -1087,7 +1576,7 @@ const MSAL_CONFIG = {
   auth: {
     clientId:    '3d61678f-e900-426f-a05c-4a765736f9c7',
     authority:   'https://login.microsoftonline.com/f9198cfe-2489-4324-b66f-e27f00e3f667',
-    redirectUri: window.location.href.split('?')[0]
+    redirectUri: window.location.origin + window.location.pathname
   },
   cache: { cacheLocation: 'sessionStorage' }
 };
@@ -1693,6 +2182,9 @@ async function runAllocation() {
   buildSearchIndex();
   applyFilters();
   updateExceptions();
+  buildSuspectFieldStats();
+  updateSuspectTable();
+  syncWorkQueue(); // populate queue immediately after allocation
   document.getElementById('filterSection').style.display = '';
   document.getElementById('btnExport').disabled = false;
   document.getElementById('btnSaveDV').disabled = false;
@@ -1707,6 +2199,7 @@ async function runAllocation() {
 
   btn.textContent = '▶ Run Allocation';
   btn.disabled = false;
+  exceptionsBuilt = false; // reset so next Exceptions tab click rebuilds
 
   // Auto-hide after 3 seconds
   setTimeout(() => showProgress(false), 3000);
@@ -1838,6 +2331,51 @@ async function applyFilters() {
   renderCatalog();
 }
 
+
+// ── Open field map from catalog table click ───────────────────────────────────
+function openFieldMap(fieldId) {
+  if (!fieldId || !allocation.length) return;
+
+  // Find the field in fieldsData
+  const fieldObj = fieldsData.find(f => f.fieldId === fieldId);
+  if (!fieldObj || !fieldObj.ring) {
+    // Field not found with valid geometry — show brief toast and return
+    showToast(`No polygon found for ${fieldId}`, 'warn');
+    return;
+  }
+
+  // Switch to map tab and render
+  switchTab('map');
+  selectedFieldId = fieldId;
+  buildFieldList(filtered.length < allocation.length ? filtered : null);
+  renderFieldMap(fieldId);
+}
+
+// ── Toast notification ────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  let toast = document.getElementById('toastMsg');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toastMsg';
+    toast.style.cssText = `
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+      background:var(--card); border:1px solid var(--border);
+      border-radius:6px; padding:8px 16px;
+      font-family:var(--font-mono); font-size:11px; color:var(--text);
+      z-index:9999; pointer-events:none;
+      transition:opacity 0.3s; opacity:0;
+    `;
+    document.body.appendChild(toast);
+  }
+  const colors = { info: 'var(--blue)', warn: 'var(--amber)', ok: 'var(--green)' };
+  toast.style.color    = colors[type] || 'var(--text)';
+  toast.style.border   = `1px solid ${colors[type] || 'var(--border)'}`;
+  toast.textContent    = msg;
+  toast.style.opacity  = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+}
+
 function renderCatalog() {
   const start = (currentPage - 1) * PAGE_SIZE;
   const page  = filtered.slice(start, start + PAGE_SIZE);
@@ -1858,19 +2396,33 @@ function renderCatalog() {
     return;
   }
 
-  tbody.innerHTML = page.map(r => `
-    <tr>
+  tbody.innerHTML = page.map(r => {
+    // Build clickable field ID cells
+    const treeFieldCell = r.treeField
+      ? `<span class="field-link tree-field"
+           onclick="openFieldMap('${esc(r.treeField)}')"
+           title="View ${esc(r.treeField)} on map">${esc(r.treeField)}</span>`
+      : '<span style="color:var(--muted)">—</span>';
+
+    const matchedFieldCell = r.matchedFieldId
+      ? `<span class="field-link matched-field"
+           onclick="openFieldMap('${esc(r.matchedFieldId)}')"
+           title="View ${esc(r.matchedFieldId)} on map">${esc(r.matchedFieldId)}</span>`
+      : '<span style="color:var(--muted)">—</span>';
+
+    return `<tr>
       <td style="font-family:var(--font-mono);color:var(--blue)">${esc(r.treeCode)}</td>
       <td>${esc(r.species)}</td>
-      <td style="font-family:var(--font-mono);font-size:10px">${esc(r.treeField) || '<span style="color:var(--muted)">—</span>'}</td>
-      <td style="font-family:var(--font-mono);font-size:10px;color:var(--green)">${esc(r.matchedFieldId) || '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-family:var(--font-mono);font-size:10px">${treeFieldCell}</td>
+      <td style="font-family:var(--font-mono);font-size:10px">${matchedFieldCell}</td>
       <td class="${r.fieldMatch === true ? 'flag-yes' : r.fieldMatch === false ? 'flag-no' : 'flag-na'}">${r.fieldMatch === true ? '✓' : r.fieldMatch === false ? '✗' : '—'}</td>
       <td class="${r.ownerMatch === true ? 'flag-yes' : r.ownerMatch === false ? 'flag-no' : 'flag-na'}">${r.ownerMatch === true ? '✓' : r.ownerMatch === false ? '✗' : '—'}</td>
       <td>${statusBadge(r.status)}</td>
       <td style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${r.lat !== null ? `${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}` : '<span style="color:var(--red)">Missing</span>'}</td>
       <td style="font-family:var(--font-mono)">${r.accuracy !== null ? r.accuracy.toFixed(1) + 'm' : '—'}</td>
       <td style="color:var(--muted);font-size:10px">${esc(r.createdOn).split(' ')[0] || '—'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function statusBadge(s) {
@@ -2080,6 +2632,251 @@ function renderFieldMap(fieldId) {
 // EXCEPTIONS VIEW
 // ═══════════════════════════════════════════════════════════════════════════
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WORK QUEUE
+// ═══════════════════════════════════════════════════════════════════════════
+
+const WQ_KEY = 'ccs_work_queue_v1';
+let workQueue = []; // array of task objects
+
+function wqLoad() {
+  try {
+    const saved = localStorage.getItem(WQ_KEY);
+    workQueue = saved ? JSON.parse(saved) : [];
+  } catch(e) { workQueue = []; }
+}
+
+function wqSave() {
+  try { localStorage.setItem(WQ_KEY, JSON.stringify(workQueue)); } catch(e) {}
+}
+
+function wqGet(fieldId) {
+  return workQueue.find(t => t.fieldId === fieldId);
+}
+
+// Called after allocation + suspect stats are built
+// Adds new suspect fields to queue, auto-verifies resolved ones
+function syncWorkQueue() {
+  wqLoad();
+  const threshold = parseInt((document.getElementById('thresholdSlider') || {value:'80'}).value || 80) / 100;
+
+  // Mark previously queued fields as clean if they no longer meet threshold
+  workQueue.forEach(t => {
+    if (t.status === 'pending' || t.status === 'progress') {
+      const current = suspectFieldStats.find(s => s.fieldId === t.fieldId);
+      if (!current || current.rate < threshold) {
+        t.status = 'clean';
+        t.autoVerifiedOn = new Date().toISOString().slice(0,10);
+      }
+    }
+  });
+
+  // Add new suspect fields not already in queue
+  suspectFieldStats.filter(s => s.rate >= threshold).forEach(s => {
+    if (!wqGet(s.fieldId)) {
+      workQueue.push({
+        fieldId:    s.fieldId,
+        owner:      s.owner,
+        zone:       s.zone,
+        inside:     s.inside,
+        mismatch:   s.mismatch,
+        rate:       s.rate,
+        pattern:    s.conflictTree > s.blankTree ? 'Genuine conflicts' : 'Blank tree fields',
+        status:     'pending',
+        note:       '',
+        addedOn:    new Date().toISOString().slice(0,10),
+        updatedOn:  '',
+      });
+    } else {
+      // Update live stats
+      const t = wqGet(s.fieldId);
+      t.inside   = s.inside;
+      t.mismatch = s.mismatch;
+      t.rate     = s.rate;
+    }
+  });
+
+  wqSave();
+  updateWQBadge();
+  populateWQFilters();
+
+  // If work queue tab is visible, re-render
+  if (document.getElementById('view-workqueue').classList.contains('active')) {
+    renderWorkQueue();
+  }
+}
+
+function updateWQBadge() {
+  const open = workQueue.filter(t => t.status === 'pending' || t.status === 'progress').length;
+  const badge = document.getElementById('wqBadge');
+  if (!badge) return;
+  badge.style.display = open > 0 ? '' : 'none';
+  badge.textContent = open > 999 ? '999+' : open;
+}
+
+function populateWQFilters() {
+  const zones = [...new Set(workQueue.map(t => t.zone).filter(Boolean).sort())];
+  const sel = document.getElementById('wqFltZone');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All zones</option>' +
+    zones.map(z => `<option value="${z}"${z===cur?' selected':''}>${z}</option>`).join('');
+}
+
+function renderWorkQueue() {
+  wqLoad();
+  const statusFlt = (document.getElementById('wqFltStatus') || {}).value || '';
+  const zoneFlt   = (document.getElementById('wqFltZone')   || {}).value || '';
+  const q         = ((document.getElementById('wqSearch')   || {}).value || '').toLowerCase();
+
+  let items = workQueue.filter(t => {
+    if (statusFlt && t.status !== statusFlt) return false;
+    if (zoneFlt   && t.zone   !== zoneFlt)   return false;
+    if (q && !`${t.fieldId} ${t.owner} ${t.zone}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  // Sort: pending first, then progress, then done, then clean
+  const order = {pending:0, progress:1, done:2, clean:3};
+  items.sort((a,b) => {
+    const od = (order[a.status]||0) - (order[b.status]||0);
+    return od !== 0 ? od : b.rate - a.rate;
+  });
+
+  // Stats
+  const counts = {pending:0, progress:0, done:0, clean:0};
+  workQueue.forEach(t => { if(counts[t.status]!==undefined) counts[t.status]++; });
+  document.getElementById('wqNPending').textContent  = counts.pending.toLocaleString();
+  document.getElementById('wqNProgress').textContent = counts.progress.toLocaleString();
+  document.getElementById('wqNDone').textContent     = counts.done.toLocaleString();
+  document.getElementById('wqNClean').textContent    = counts.clean.toLocaleString();
+  updateWQBadge();
+
+  const list = document.getElementById('wqList');
+  if (!items.length) {
+    list.innerHTML = `<div class="wq-empty">
+      ${workQueue.length === 0
+        ? 'Run allocation, go to Exceptions tab, then exclude suspect fields<br>to populate the work queue automatically'
+        : 'No items match the current filters'}
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(t => {
+    const ratePct = Math.round(t.rate * 100);
+    const rateCol = ratePct >= 90 ? '' : 'amber';
+    const statusLabels = {
+      pending:  'Pending correction',
+      progress: 'In progress',
+      done:     'Done — awaiting reload',
+      clean:    '✓ Auto-verified clean'
+    };
+    const autoTag = t.status === 'clean'
+      ? `<span class="wq-auto-tag">auto ${t.autoVerifiedOn||''}</span>` : '';
+    const actionBtns = t.status === 'pending'
+      ? `<button class="wq-btn start" onclick="wqSetStatus('${esc(t.fieldId)}','progress')">▶ Start</button>
+         <button class="wq-btn done"  onclick="wqSetStatus('${esc(t.fieldId)}','done')">✓ Done</button>`
+      : t.status === 'progress'
+      ? `<button class="wq-btn done"  onclick="wqSetStatus('${esc(t.fieldId)}','done')">✓ Mark done</button>
+         <button class="wq-btn reopen" onclick="wqSetStatus('${esc(t.fieldId)}','pending')">↺ Reopen</button>`
+      : t.status === 'done'
+      ? `<button class="wq-btn reopen" onclick="wqSetStatus('${esc(t.fieldId)}','pending')">↺ Reopen</button>`
+      : `<button class="wq-btn reopen" onclick="wqSetStatus('${esc(t.fieldId)}','pending')">↺ Re-add</button>`;
+
+    const safeId = t.fieldId.replace(/[^a-z0-9]/gi,'_');
+    return `<div class="wq-card status-${t.status}" id="wqcard_${safeId}">
+      <div class="wq-card-left">
+        <div class="wq-card-top">
+          <span class="wq-field-id" onclick="openFieldMap('${esc(t.fieldId)}')">${esc(t.fieldId)}</span>
+          <span class="wq-owner">${esc(t.owner)}</span>
+          ${t.zone ? `<span class="wq-zone">${esc(t.zone)}</span>` : ''}
+          ${autoTag}
+        </div>
+        <div class="wq-meta">
+          <span>${t.inside} trees inside</span>
+          <span style="color:var(--red)">${t.mismatch} mismatches</span>
+          <span>
+            <span class="wq-rate-bar">
+              <span class="wq-rate-track">
+                <span class="wq-rate-fill ${rateCol}" style="width:${ratePct}%"></span>
+              </span>
+              <strong style="color:${ratePct>=90?'var(--red)':'var(--amber)'}">${ratePct}%</strong>
+            </span>
+          </span>
+          <span style="color:var(--muted);font-size:9px">${esc(t.pattern||'')}</span>
+          <span style="color:var(--faint);font-size:9px">Added ${esc(t.addedOn||'')}</span>
+          ${t.updatedOn ? `<span style="color:var(--muted);font-size:9px">Updated ${esc(t.updatedOn)}</span>` : ''}
+        </div>
+        <div class="wq-note-wrap">
+          <input class="wq-note" id="wqnote_${safeId}"
+            placeholder="Add correction notes, assigned to, reference…"
+            value="${esc(t.note||'')}"
+            onkeydown="if(event.key==='Enter')wqSaveNote('${esc(t.fieldId)}','${safeId}')"/>
+          <button class="wq-note-save" onclick="wqSaveNote('${esc(t.fieldId)}','${safeId}')">Save note</button>
+        </div>
+      </div>
+      <div class="wq-card-right">
+        <span class="wq-status-badge ${t.status}">${statusLabels[t.status]||t.status}</span>
+        <div class="wq-action-row">
+          <button class="wq-btn map" onclick="openFieldMap('${esc(t.fieldId)}')">🗺 Map</button>
+          ${actionBtns}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function wqSetStatus(fieldId, status) {
+  wqLoad();
+  const t = wqGet(fieldId);
+  if (!t) return;
+  t.status    = status;
+  t.updatedOn = new Date().toISOString().slice(0,10);
+  wqSave();
+  renderWorkQueue();
+}
+
+function wqSaveNote(fieldId, safeId) {
+  wqLoad();
+  const t = wqGet(fieldId);
+  if (!t) return;
+  const input = document.getElementById('wqnote_' + safeId);
+  if (!input) return;
+  t.note      = input.value;
+  t.updatedOn = new Date().toISOString().slice(0,10);
+  wqSave();
+  // Flash feedback
+  const btn = input.nextElementSibling;
+  if (btn) { btn.textContent = '✓ Saved'; setTimeout(() => btn.textContent = 'Save note', 1200); }
+}
+
+function clearDoneItems() {
+  if (!confirm('Remove all auto-verified clean items from the queue?')) return;
+  wqLoad();
+  workQueue = workQueue.filter(t => t.status !== 'clean');
+  wqSave();
+  renderWorkQueue();
+}
+
+function exportWQcsv() {
+  wqLoad();
+  const cols = ['fieldId','owner','zone','inside','mismatch','rate','pattern','status','note','addedOn','updatedOn'];
+  const hdrs = ['Field ID','Owner','Zone','Trees Inside','Mismatches','Mismatch Rate','Pattern','Status','Notes','Added On','Updated On'];
+  const rows = [hdrs, ...workQueue.map(t => cols.map(c => {
+    const v = t[c];
+    if (c === 'rate') return Math.round((v||0)*100) + '%';
+    return String(v||'');
+  }))];
+  const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `CCS_Work_Queue_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
 function updateExceptions() {
   const fieldMismatches = allocation.filter(r => r.status === 'Allocated - Field mismatch');
   const total = allocation.length;
@@ -2094,8 +2891,8 @@ function updateExceptions() {
   document.getElementById('excN3').textContent = counts['Allocated - Field mismatch'].toLocaleString();
 
   buildMismatchBreakdown(fieldMismatches, total);
-  buildSuspectFieldStats();
-  updateSuspectTable();
+  // NOTE: buildSuspectFieldStats + updateSuspectTable are called once
+  // after allocation completes — not on every exceptions refresh
   renderExceptionsTable(null);
 }
 
@@ -2286,8 +3083,25 @@ function recomputeWithExclusions() {
   });
   buildSearchIndex();
   updateKPIs();
-  updateExceptions();
+  // Lightweight refresh — update exception counts + table only,
+  // no expensive suspect stats rebuild
+  refreshExceptionCounts();
+  updateSuspectTable(); // re-render suspect table with updated exclusion buttons
   applyFilters();
+}
+
+// ── Lightweight exception count refresh (no suspect stats rebuild) ────────────
+function refreshExceptionCounts() {
+  const fieldMismatches = allocation.filter(r => r.status === 'Allocated - Field mismatch');
+  const total = allocation.length;
+  document.getElementById('excN1').textContent =
+    allocation.filter(r => r.status === 'Outside polygon').length.toLocaleString();
+  document.getElementById('excN2').textContent =
+    allocation.filter(r => r.status === 'Outside polygon but field tagged').length.toLocaleString();
+  document.getElementById('excN3').textContent =
+    fieldMismatches.length.toLocaleString();
+  buildMismatchBreakdown(fieldMismatches, total);
+  renderExceptionsTable(excActiveFilter);
 }
 
 
@@ -2301,18 +3115,24 @@ function filterException(status) {
 }
 
 function renderExceptionsTable(statusFilter) {
-  const rows = allocation.filter(r => {
+  const allRows = allocation.filter(r => {
     if (statusFilter) return r.status === statusFilter;
     return ['Outside polygon','Outside polygon but field tagged',
             'Allocated - Field mismatch'].includes(r.status);
   });
-
+  // Cap display at 500 rows — full data available via CSV export
+  const rows = allRows.slice(0, 500);
   const tbody = document.getElementById('excBody');
-  if (!rows.length) {
+  if (!allRows.length) {
     tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="color:var(--green)">✓ No exceptions${statusFilter ? ' for this filter' : ''}</div></td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map(r => `
+  const capNote = allRows.length > 500
+    ? `<tr><td colspan="9" style="text-align:center;padding:8px;font-family:var(--font-mono);font-size:10px;color:var(--amber)">
+        Showing first 500 of ${allRows.length.toLocaleString()} exceptions — use ⬇ Export CSV for full list
+       </td></tr>`
+    : '';
+  tbody.innerHTML = capNote + rows.map(r => `
     <tr>
       <td style="font-family:var(--font-mono);color:var(--blue)">${esc(r.treeCode)}</td>
       <td>${esc(r.species)}</td>
@@ -2358,15 +3178,138 @@ function exportCSV() {
 // TABS & UI UTILS
 // ═══════════════════════════════════════════════════════════════════════════
 
-function switchTab(tab) {
-  ['catalog','map','exceptions'].forEach(t => {
+let exceptionsBuilt = false; // flag — only build once per allocation run
+
+function switchTab(tab, pushState = true) {
+  ['catalog','map','exceptions','workqueue','why'].forEach(t => {
     document.getElementById(`view-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'map' && map) {
     setTimeout(() => map.invalidateSize(), 100);
   }
+  // Build exceptions lazily — only when tab is first opened after allocation
+  if (tab === 'workqueue' && allocation.length) {
+    wqLoad();
+    // Build suspect stats if not yet built
+    if (!suspectFieldStats.length) buildSuspectFieldStats();
+    // Always sync queue when opening this tab — adds new items, auto-verifies resolved ones
+    syncWorkQueue();
+    renderWorkQueue();
+  }
+  if (tab === 'exceptions' && allocation.length && !exceptionsBuilt) {
+    exceptionsBuilt = true;
+    buildExceptionsAsync();
+  }
+  // Populate live KPIs on Why Errors tab
+  if (tab === 'why' && allocation.length) {
+    const outside  = allocation.filter(r => r.status === 'outside').length;
+    const mismatch = allocation.filter(r => r.status === 'mismatch').length;
+    const suspect  = suspectFieldStats.length || 0;
+    const fmt = n => n.toLocaleString();
+    const el = id => document.getElementById(id);
+    if (el('why-outside-n'))  el('why-outside-n').textContent  = fmt(outside);
+    if (el('why-mismatch-n')) el('why-mismatch-n').textContent = fmt(mismatch);
+    if (el('why-suspect-n'))  el('why-suspect-n').textContent  = suspect > 0 ? fmt(suspect) : '—';
+  }
+  if (pushState) {
+    history.pushState({ tab }, '', `?tab=${tab}`);
+  }
 }
+
+// ── Async exceptions builder — chunked to avoid blocking the main thread ──────
+async function buildExceptionsAsync() {
+  const excBody = document.getElementById('excBody');
+  excBody.innerHTML = `<tr><td colspan="9">
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+      <span>Building exception report for ${allocation.length.toLocaleString()} trees…</span>
+    </div></td></tr>`;
+
+  // Yield to browser first
+  await new Promise(r => requestAnimationFrame(r));
+
+  // Count exceptions in one pass
+  let outside = 0, tagged = 0, mismatch = 0;
+  const fieldMismatches = [];
+  const byField = {};
+
+  const CHUNK = 5000;
+  for (let i = 0; i < allocation.length; i += CHUNK) {
+    const end = Math.min(i + CHUNK, allocation.length);
+    for (let j = i; j < end; j++) {
+      const r = allocation[j];
+      if (r.status === 'Outside polygon') outside++;
+      else if (r.status === 'Outside polygon but field tagged') tagged++;
+      else if (r.status === 'Allocated - Field mismatch') {
+        mismatch++;
+        fieldMismatches.push(r);
+      }
+      // Build suspect stats in same pass
+      if (r.matchedFieldId && r.insidePolygon) {
+        if (!byField[r.matchedFieldId]) {
+          byField[r.matchedFieldId] = {
+            fieldId: r.matchedFieldId,
+            owner: r.matchedFieldOwner || r.fieldOwner || '—',
+            zone:  r.matchedFieldZone  || '—',
+            inside: 0, mismatch: 0, blankTree: 0, conflictTree: 0
+          };
+        }
+        const s = byField[r.matchedFieldId];
+        s.inside++;
+        if (r.status && r.status.includes('mismatch')) {
+          s.mismatch++;
+          if (!r.treeField || r.treeField.trim() === '') s.blankTree++;
+          else s.conflictTree++;
+        }
+      }
+    }
+    await new Promise(r => requestAnimationFrame(r));
+  }
+
+  // Update counts
+  document.getElementById('excN1').textContent = outside.toLocaleString();
+  document.getElementById('excN2').textContent = tagged.toLocaleString();
+  document.getElementById('excN3').textContent = mismatch.toLocaleString();
+
+  // Build suspect stats
+  suspectFieldStats = Object.values(byField)
+    .filter(s => s.inside >= 2)
+    .map(s => ({ ...s, rate: s.inside > 0 ? s.mismatch / s.inside : 0 }))
+    .sort((a, b) => b.rate - a.rate);
+
+  // Render breakdown + suspect table
+  buildMismatchBreakdown(fieldMismatches, allocation.length);
+  updateSuspectTable();
+
+  // Render exceptions table — show first 500 only to avoid DOM overload
+  renderExceptionsTable(null);
+}
+
+// Handle browser back/forward — stay inside the app
+window.addEventListener('popstate', function(e) {
+  const tab = (e.state && e.state.tab) || getTabFromUrl() || 'catalog';
+  switchTab(tab, false);
+});
+
+// Read tab from query param — never from hash (MSAL uses hash for auth)
+function getTabFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('tab');
+}
+
+// On first load, set initial tab from URL query param if present
+// IMPORTANT: do NOT touch the hash — MSAL needs it for auth redirect processing
+window.addEventListener('DOMContentLoaded', function() {
+  const tab = getTabFromUrl() || 'catalog';
+  // Only replace state if no MSAL auth hash is present
+  const hash = window.location.hash;
+  const isMsalHash = hash && (hash.includes('code=') || hash.includes('error=') || hash.includes('state='));
+  if (!isMsalHash) {
+    history.replaceState({ tab }, '', `?tab=${tab}`);
+    switchTab(tab, false);
+  }
+});
 
 function clearFilters() {
   ['fltStatus','fltField','fltOwner','fltSpecies','fltZone'].forEach(id => {
@@ -2383,7 +3326,7 @@ async function openTreeCatalog() {
   if (!data.length && treesData.length) {
     data = treesData.map(t => ({ ...t, status: '', matchedFieldId: t.treeField, insidePolygon: false }));
   }
-  if (!data.length) { alert("Connect to Fieldforce and run allocation first."); return; }
+  if (!data.length) { alert('Connect to Fieldforce and run allocation first.'); return; }
 
   // Slim trees — only fields tree-catalog.html needs
   const slim = data.map(r => ({
@@ -2405,8 +3348,8 @@ async function openTreeCatalog() {
     owner:   f.owner,
     nrc:     f.nrc   || '',
     zone:    f.zone  || '',
-    ring:    f.ring  || null   // pre-parsed coordinate array — no re-parsing needed
-  })).filter(f => f.ring); // only fields with valid geometry
+    ring:    f.ring  || null
+  })).filter(f => f.ring);
 
   // Write both to IndexedDB
   try {
@@ -2416,12 +3359,12 @@ async function openTreeCatalog() {
     try { localStorage.setItem('ccs_tree_allocation', JSON.stringify(slim)); } catch(le) {}
   }
 
-  window.open("tree-catalog.html", "_blank");
+  window.open('tree-catalog.html', '_blank');
 }
 
 function clearAll() {
   fieldsData = []; treesData = []; allocation = []; filtered = []; searchIndex = [];
-  excludedFieldIds = new Set(); suspectFieldStats = [];
+  excludedFieldIds = new Set(); suspectFieldStats = []; exceptionsBuilt = false;
   selectedFieldId = null; excActiveFilter = null;
   ['statusFields','statusTrees'].forEach(id => {
     document.getElementById(id).textContent = '';
@@ -2944,5 +3887,407 @@ function generateReportCSV(data) {
   <span class="fab-icon">🌳</span> Tree Catalog
 </button>
 
+
+<!-- ── WHY ERRORS OVERLAY ─────────────────────────────────────────────── -->
+<div class="we-overlay" id="weOverlay" onclick="if(event.target===this)closeWhyErrors()">
+  <div class="we-panel">
+    <div class="we-header">
+      <span class="we-header-title">⚠ Why do we have errors? — Plain language guide</span>
+      <button class="we-close" onclick="closeWhyErrors()">✕</button>
+    </div>
+    <div class="we-body">
+
+      <div class="we-hero">
+        <div class="we-hero-label">The one-sentence answer</div>
+        <div class="we-hero-title">The trees were recorded correctly.<br>The field boundaries were drawn in the wrong place.</div>
+        <div class="we-hero-sub">Tree GPS coordinates are captured once, on the ground, at the moment of planting. They do not change. Field polygon boundaries are drawn separately — and that is where errors enter.</div>
+      </div>
+
+      <div class="we-stats">
+        <div class="we-stat">
+          <div class="we-stat-n" style="color:var(--red)" id="weStatOutside">—</div>
+          <div class="we-stat-l">Trees outside<br>all field polygons</div>
+        </div>
+        <div class="we-stat">
+          <div class="we-stat-n" style="color:var(--amber)" id="weStatMismatch">—</div>
+          <div class="we-stat-l">Trees inside<br>wrong field polygon</div>
+        </div>
+        <div class="we-stat">
+          <div class="we-stat-n" style="color:var(--amber)">99.8%</div>
+          <div class="we-stat-l">Caused by wrong<br>boundary placement</div>
+        </div>
+        <div class="we-stat">
+          <div class="we-stat-n" style="color:var(--green)" id="weStatSuspect">—</div>
+          <div class="we-stat-l">Fields needing<br>boundary correction</div>
+        </div>
+      </div>
+
+      <div class="we-sec-label">The three causes — ranked by frequency</div>
+      <div class="we-causes">
+        <div class="we-cause" style="border-color:var(--red-b)">
+          <div class="we-cause-rank" style="color:var(--red)">Cause 1 — most common</div>
+          <div class="we-cause-pct" style="color:var(--red)">99.8%</div>
+          <div class="we-cause-title">Field boundary drawn in the wrong place</div>
+          <div class="we-cause-desc">The field polygon was drawn incorrectly — offset, too small, or at the wrong location entirely. Every planted tree in that field appears outside or mismatched, even though the trees are exactly where they were planted.</div>
+          <div class="we-cause-action" style="color:var(--red);border-color:var(--red-b);background:var(--red-bg)">Fix: redraw boundary in the Polygon Corrector</div>
+        </div>
+        <div class="we-cause" style="border-color:var(--blue-b)">
+          <div class="we-cause-rank" style="color:var(--blue)">Cause 2 — rare</div>
+          <div class="we-cause-pct" style="color:var(--blue)">&lt; 1%</div>
+          <div class="we-cause-title">GPS reading had high error at planting</div>
+          <div class="we-cause-desc">The phone's GPS was inaccurate at the moment of recording — heavy forest cover or too few satellites. The planted tree lands slightly outside a correctly drawn boundary. Identifiable from the GPS accuracy reading in Fieldforce.</div>
+          <div class="we-cause-action" style="color:var(--blue);border-color:var(--blue-b);background:var(--blue-bg)">Fix: verify GPS accuracy reading in Fieldforce</div>
+        </div>
+        <div class="we-cause" style="border-color:var(--green-b)">
+          <div class="we-cause-rank" style="color:var(--green)">Cause 3 — data entry</div>
+          <div class="we-cause-pct" style="color:var(--green)">0.2%</div>
+          <div class="we-cause-title">Field ID not recorded at planting</div>
+          <div class="we-cause-desc">The field officer did not select a field name when recording the planted tree. The system finds the nearest field polygon spatially but cannot confirm it, so it flags the tree for review. This is a blank field tag — not a location error.</div>
+          <div class="we-cause-action" style="color:var(--green);border-color:var(--green-b);background:var(--green-bg)">Fix: fill in missing field ID in Fieldforce</div>
+        </div>
+      </div>
+
+      <div class="we-sec-label">What this looks like on the ground</div>
+      <div class="we-diagrams">
+        <div class="we-diagram">
+          <svg width="100%" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+            <rect x="80" y="20" width="240" height="150" rx="4" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="7,5"/>
+            <text x="200" y="14" text-anchor="middle" font-size="10" fill="#6b88a8" font-family="IBM Plex Mono,monospace">Field boundary at correct location</text>
+            <circle cx="140" cy="70" r="8" fill="#22c55e"/>
+            <circle cx="175" cy="55" r="8" fill="#22c55e"/>
+            <circle cx="220" cy="75" r="8" fill="#22c55e"/>
+            <circle cx="155" cy="110" r="8" fill="#22c55e"/>
+            <circle cx="200" cy="125" r="8" fill="#22c55e"/>
+            <circle cx="245" cy="100" r="8" fill="#22c55e"/>
+            <circle cx="175" cy="145" r="8" fill="#22c55e"/>
+            <text x="200" y="188" text-anchor="middle" font-size="11" fill="#22c55e" font-family="IBM Plex Mono,monospace" font-weight="700">All 7 planted trees inside — Allocated</text>
+          </svg>
+          <div class="we-diagram-cap"><strong>Correct boundary.</strong> Field polygon drawn at the true location. All planted trees land inside. Status: Allocated.</div>
+        </div>
+        <div class="we-diagram">
+          <svg width="100%" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+            <rect x="215" y="20" width="155" height="150" rx="4" fill="rgba(239,68,68,0.06)" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="7,5"/>
+            <text x="292" y="100" text-anchor="middle" font-size="10" fill="#ef4444" font-family="IBM Plex Mono,monospace">Boundary drawn</text>
+            <text x="292" y="115" text-anchor="middle" font-size="10" fill="#ef4444" font-family="IBM Plex Mono,monospace">200m too far right</text>
+            <circle cx="90" cy="70" r="8" fill="#ef4444"/>
+            <circle cx="125" cy="55" r="8" fill="#ef4444"/>
+            <circle cx="105" cy="105" r="8" fill="#ef4444"/>
+            <circle cx="145" cy="120" r="8" fill="#ef4444"/>
+            <circle cx="75" cy="130" r="8" fill="#ef4444"/>
+            <circle cx="130" cy="150" r="8" fill="#ef4444"/>
+            <circle cx="165" cy="85" r="8" fill="#ef4444"/>
+            <line x1="175" y1="95" x2="215" y2="95" stroke="#6b88a8" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="200" y="188" text-anchor="middle" font-size="11" fill="#ef4444" font-family="IBM Plex Mono,monospace" font-weight="700">All 7 outside — same correct GPS</text>
+          </svg>
+          <div class="we-diagram-cap"><strong>Wrong boundary.</strong> Same 7 planted trees, same correct GPS. Field polygon placed 200m off — all trees flagged. The trees are correct. The boundary needs redrawing.</div>
+        </div>
+      </div>
+
+      <div class="we-rule">
+        <strong>The simple rule:</strong> When every planted tree in a field is flagged — the field boundary is wrong, not the trees. When only one or two trees are flagged in an otherwise clean field — those specific GPS readings may need checking.
+      </div>
+
+      <div class="we-verdict">
+        <div class="we-verdict-title">Why the algorithm is not the problem</div>
+        <div class="we-verdict-row">
+          <div class="we-verdict-dot"></div>
+          <div class="we-verdict-text"><strong>The matching is mathematically exact.</strong> The system checks whether a GPS point is inside a field boundary. There is no estimation, rounding, or guesswork — it is a precise yes or no answer.</div>
+        </div>
+        <div class="we-verdict-row">
+          <div class="we-verdict-dot"></div>
+          <div class="we-verdict-text"><strong>Planted tree GPS coordinates are recorded once, on the ground, at planting.</strong> They do not move or change. They are the most reliable data point in the entire system.</div>
+        </div>
+        <div class="we-verdict-row">
+          <div class="we-verdict-dot"></div>
+          <div class="we-verdict-text"><strong>Field polygon boundaries are drawn separately, later, by someone not physically at the field.</strong> That is where errors enter. Correcting the boundaries corrects the error rate — no changes to tree records are needed.</div>
+        </div>
+        <div class="we-verdict-row">
+          <div class="we-verdict-dot" style="background:var(--amber)"></div>
+          <div class="we-verdict-text"><strong>What to do next:</strong> Open the Work Queue tab. Fields are listed by most trees affected. Fix the top fields first — each corrected field polygon can resolve hundreds or thousands of flagged planted trees in a single action.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── USER HANDBOOK DRAWER ──────────────────────────────────────────────── -->
+<div class="handbook-overlay" id="handbookOverlay" onclick="closeHandbookIfOutside(event)">
+  <div class="handbook-drawer" id="handbookDrawer">
+    <div class="hb-header">
+      <span class="hb-title">📖 CCS Active Tree Catalog — User Handbook</span>
+      <button class="hb-close" onclick="closeHandbook()">✕</button>
+    </div>
+    <div class="hb-search">
+      <input type="text" id="hbSearch" placeholder="Search handbook…" oninput="searchHandbook(this.value)"/>
+    </div>
+    <div class="hb-nav">
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-start')">Getting Started</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-results')">Results</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-catalog')">Catalog</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-map')">Field Map</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-exceptions')">Exceptions</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-mismatches')">Mismatches</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-exclude')">Excluding Fields</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-export')">Exporting</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-legend')">Legend</button>
+      <button class="hb-nav-btn" onclick="hbScrollTo('hb-how')">How It Works</button>
+    </div>
+    <div class="hb-body" id="hbBody">
+
+      <!-- GETTING STARTED -->
+      <div class="hb-section" id="hb-start">
+        <div class="hb-section-title">1 — Getting Started</div>
+        <div class="hb-h3">Connecting to Fieldforce (Live Data)</div>
+        <div class="hb-p">Click the <strong>☁ Connect to Fieldforce</strong> button in the left sidebar. You will be prompted to sign in with your Microsoft account. Once authenticated, the system automatically loads all Active Fields and Active Trees from Dataverse — no file needed.</div>
+        <div class="hb-p">Fields load immediately. Trees load in pages of 5,000 and the button shows progress <span class="green">(page 6 of 20…)</span>. Wait until loading completes before running allocation.</div>
+        <div class="hb-h3">Using Excel Export (Offline Fallback)</div>
+        <div class="hb-p">If Fieldforce is unavailable, export <strong>Active Fields</strong> and <strong>Active Trees</strong> from Dynamics/Fieldforce as .xlsx files. Drop each file into the corresponding upload zone. Column names are detected automatically.</div>
+        <div class="hb-h3">Running Allocation</div>
+        <div class="hb-step"><div class="hb-step-num">1</div><div class="hb-step-text">Upload or connect both <strong>Active Fields</strong> and <strong>Active Trees</strong></div></div>
+        <div class="hb-step"><div class="hb-step-num">2</div><div class="hb-step-text">Click <strong>▶ Run Allocation</strong> — a progress bar shows processing status</div></div>
+        <div class="hb-step"><div class="hb-step-num">3</div><div class="hb-step-text">When complete, all KPIs update in the header and the catalog populates</div></div>
+        <div class="hb-tip">💡 With 500k+ trees, allocation takes 30–60 seconds. The progress bar shows live counts as it runs.</div>
+      </div>
+
+      <!-- UNDERSTANDING RESULTS -->
+      <div class="hb-section" id="hb-results">
+        <div class="hb-section-title">2 — Understanding the Results</div>
+        <div class="hb-h3">Header KPIs</div>
+        <table class="hb-legend">
+          <tr><th>KPI</th><th>Meaning</th></tr>
+          <tr><td><span class="blue">Fields</span></td><td>Total active field polygons loaded</td></tr>
+          <tr><td><span class="blue">Trees</span></td><td>Total active tree records loaded</td></tr>
+          <tr><td><span class="green">Allocated</span></td><td>Trees spatially inside a field polygon with matching admin data</td></tr>
+          <tr><td><span class="red">Outside</span></td><td>Trees whose GPS coordinate falls outside all field polygons</td></tr>
+          <tr><td><span class="amber">Mismatches</span></td><td>Trees inside a polygon but admin data (field ID or owner) disagrees</td></tr>
+          <tr><td><span class="amber">Review</span></td><td>All trees needing attention — mismatches + outside-but-tagged</td></tr>
+        </table>
+        <div class="hb-h3">Tree Statuses</div>
+        <table class="hb-legend">
+          <tr><th>Status</th><th>What it means</th><th>Action</th></tr>
+          <tr><td><span class="green">Allocated</span></td><td>Tree is inside the correct field polygon — field ID and owner both match</td><td>None needed</td></tr>
+          <tr><td><span class="amber">Allocated - Field mismatch</span></td><td>Tree is inside a polygon but the tree record says a different field ID</td><td>Investigate — see Mismatches section</td></tr>
+          <tr><td><span class="red">Outside polygon</span></td><td>Tree GPS is outside all field polygons — no admin field tag either</td><td>Check GPS accuracy or polygon boundary</td></tr>
+          <tr><td style="color:var(--purple)">Outside + field tagged</td><td>Tree is outside polygons but has a field ID on record — spatial vs admin conflict</td><td>Review field boundary or GPS</td></tr>
+        </table>
+      </div>
+
+      <!-- TREE CATALOG -->
+      <div class="hb-section" id="hb-catalog">
+        <div class="hb-section-title">3 — Tree Catalog Tab</div>
+        <div class="hb-p">The catalog shows all trees in a searchable, sortable table. Use the <strong>search bar</strong> to find any tree by code, species, field ID, or owner name.</div>
+        <div class="hb-h3">Filters (left sidebar)</div>
+        <div class="hb-p">Filter by <strong>Status</strong>, <strong>Field ID</strong>, <strong>Field Owner</strong>, <strong>Species</strong>, or <strong>Zone</strong>. Filters combine — e.g. Status=Mismatch + Zone=Mpulungu shows only mismatched trees in that zone. Click <strong>Clear Filters</strong> to reset.</div>
+        <div class="hb-h3">Clicking Field IDs</div>
+        <div class="hb-p">Both the <strong>Tree Field</strong> and <strong>Matched Field</strong> columns are clickable links (dotted underline). Clicking any field ID switches to the <span class="blue">Field Map</span> tab and centres the map on that field polygon with all its trees shown.</div>
+        <div class="hb-h3">Sorting</div>
+        <div class="hb-p">Click any column header to sort. Click again to reverse. The <strong>Sort: Status</strong> and <strong>Sort: Field</strong> buttons at the top right are quick shortcuts.</div>
+        <div class="hb-tip">💡 The catalog paginates at 100 rows. Use the ← Prev / Next → buttons at the bottom to navigate pages.</div>
+      </div>
+
+      <!-- FIELD MAP -->
+      <div class="hb-section" id="hb-map">
+        <div class="hb-section-title">4 — Field Map Tab</div>
+        <div class="hb-p">The map shows a satellite view of a selected field polygon with all its associated trees plotted as numbered circles.</div>
+        <div class="hb-h3">Selecting a Field</div>
+        <div class="hb-p">Click any field in the <strong>Fields list</strong> in the left sidebar, or click a field ID link in the catalog table. The map switches automatically and centres on the polygon.</div>
+        <div class="hb-h3">Map Markers</div>
+        <table class="hb-legend">
+          <tr><th>Marker</th><th>Meaning</th></tr>
+          <tr><td><span style="color:var(--green)">● Green numbered</span></td><td>Tree allocated inside this polygon</td></tr>
+          <tr><td><span style="color:var(--red)">● Red numbered</span></td><td>Tree outside this polygon boundary</td></tr>
+          <tr><td><span style="color:var(--amber)">● Amber numbered</span></td><td>Tree inside but field/owner mismatch</td></tr>
+          <tr><td><span style="color:var(--blue)">● Blue dashed outline</span></td><td>Field polygon boundary</td></tr>
+        </table>
+        <div class="hb-p">Click any marker on the map to see a popup with the tree code, status, coordinates, and matched field.</div>
+        <div class="hb-h3">Measurement Tools</div>
+        <div class="hb-p"><strong>📐 Side lengths</strong> — labels every polygon side with its length in metres. Green = within 15% of 20m target, red = more than 30% off. A summary shows average side and total perimeter.</div>
+        <div class="hb-p"><strong>📏 A→B Ruler</strong> — click to place point A, click again for point B. A distance label appears. Drag either handle to measure any distance on the map.</div>
+        <div class="hb-tip">💡 The field summary panel (top right of map) shows inside count, outside count, and mismatch count for the selected field.</div>
+      </div>
+
+      <!-- EXCEPTIONS -->
+      <div class="hb-section" id="hb-exceptions">
+        <div class="hb-section-title">5 — Exceptions Tab</div>
+        <div class="hb-p">The Exceptions tab shows all trees that require attention. It is built on demand when you first click the tab — with large datasets this takes a few seconds.</div>
+        <div class="hb-h3">Exception Cards</div>
+        <div class="hb-p">Four summary cards show counts for each exception type. Click any card to filter the exceptions table below to just that category. Click again to clear the filter.</div>
+        <div class="hb-h3">Mismatch Breakdown Panel</div>
+        <div class="hb-p">Below the cards, the breakdown panel diagnoses <em>why</em> mismatches are occurring across three categories:</div>
+        <div class="hb-p"><span class="amber">Blank Tree Field</span> — the tree record has no Field value, so the system assigned the nearest polygon. Not a real error — a data entry gap in Fieldforce.</div>
+        <div class="hb-p"><span class="red">Genuine Field Conflict</span> — the tree record says Field A but the GPS lands in Field B. Requires investigation.</div>
+        <div class="hb-p"><span class="blue">Field Tagged but No Spatial Match</span> — tree has a field tag but lands outside all polygons. Likely a GPS or polygon boundary issue.</div>
+        <div class="hb-tip">💡 The exceptions table shows the first 500 rows. Use ⬇ Export CSV to download the full exception list.</div>
+      </div>
+
+      <!-- MISMATCHES -->
+      <div class="hb-section" id="hb-mismatches">
+        <div class="hb-section-title">6 — Understanding Mismatches</div>
+        <div class="hb-p">A mismatch means a tree was found <strong>spatially inside</strong> a field polygon, but the tree's own record says it belongs to a <strong>different field</strong>.</div>
+        <div class="hb-h3">Two common causes</div>
+        <div class="hb-p"><strong>1. Overlapping or misplaced polygons</strong> — when field boundaries are drawn too close together or are in the wrong location, a tree planted in Field A can accidentally land inside Field B's polygon. The system flags it as a mismatch because the tree record says "Field A" but the geometry says "Field B". This is a <span class="amber">polygon problem</span>, not a tree problem.</div>
+        <div class="hb-p"><strong>2. Missing field tag</strong> — some trees were submitted to Fieldforce without a Field ID recorded. The system assigns the nearest polygon spatially but flags the result because it cannot confirm the assignment. This is a <span class="amber">data entry gap</span> — fixable by ensuring field officers select the Field when recording trees.</div>
+        <div class="hb-warn">⚠ A mismatch is not necessarily a mistake by the farmer or field officer. In most cases it indicates a polygon boundary that needs correction in the Polygon Corrector tool.</div>
+        <div class="hb-h3">Suspect Fields Panel</div>
+        <div class="hb-p">Below the Mismatch Breakdown, the <strong>Suspect Fields</strong> panel lists all fields where a high percentage of trees are mismatched. Use the threshold slider to set the sensitivity (default 80%). Fields at 100% mismatch rate almost always have a misplaced polygon boundary.</div>
+      </div>
+
+      <!-- EXCLUDING FIELDS -->
+      <div class="hb-section" id="hb-exclude">
+        <div class="hb-section-title">7 — Excluding Problem Fields</div>
+        <div class="hb-p">Fields with misplaced polygon boundaries can be temporarily <strong>excluded</strong> from the allocation results so they do not distort the overall numbers while corrections are being made.</div>
+        <div class="hb-h3">How to exclude a field</div>
+        <div class="hb-step"><div class="hb-step-num">1</div><div class="hb-step-text">Go to the <strong>Exceptions tab</strong></div></div>
+        <div class="hb-step"><div class="hb-step-num">2</div><div class="hb-step-text">In the <strong>Suspect Fields</strong> panel, set the threshold slider (e.g. 80%)</div></div>
+        <div class="hb-step"><div class="hb-step-num">3</div><div class="hb-step-text">Click <strong>Exclude</strong> on individual fields, or click <strong>✕ Exclude all shown</strong></div></div>
+        <div class="hb-step"><div class="hb-step-num">4</div><div class="hb-step-text">All KPIs and the catalog update instantly — excluded trees are reclassified as Outside</div></div>
+        <div class="hb-step"><div class="hb-step-num">5</div><div class="hb-step-text">A red banner shows how many fields and trees are excluded</div></div>
+        <div class="hb-p">You can also type a Field ID directly in the <strong>Excluded Polygons</strong> box in the left sidebar and press Enter to add it manually.</div>
+        <div class="hb-tip">💡 Exclusions only affect this session. The underlying data is not changed. Once a polygon is corrected in the Polygon Corrector, re-run the allocation and remove the exclusion.</div>
+        <div class="hb-h3">Fixing excluded fields</div>
+        <div class="hb-p">Take the Field ID to the <strong>CCS Polygon Corrector</strong> tool, redraw the boundary to the correct location, and save the corrected GeoJSON back to Fieldforce/Dataverse.</div>
+      </div>
+
+      <!-- EXPORTING -->
+      <div class="hb-section" id="hb-export">
+        <div class="hb-section-title">8 — Exporting & Reports</div>
+        <div class="hb-h3">⬇ Export CSV</div>
+        <div class="hb-p">Downloads all allocation results as a .csv file including tree code, species, coordinates, field assignment, match flags, and status. The full dataset is exported — not just the 100 rows visible on screen.</div>
+        <div class="hb-h3">☁ Save to Fieldforce</div>
+        <div class="hb-p">Writes the allocation results back to Dataverse, updating each tree record with its matched field ID and allocation status. Requires an active Fieldforce connection.</div>
+        <div class="hb-h3">📋 Compliance Report</div>
+        <div class="hb-p">Generates a multi-section PDF report suitable for Verra/Gold Standard certification review. Sections include Allocation Overview, Species Breakdown, Field Summary, Exceptions List, and Polygon Quality. Select which sections to include before downloading.</div>
+        <div class="hb-tip">💡 Always exclude known problem fields before generating a Compliance Report so the numbers reflect only verified, correctly allocated trees.</div>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="hb-section" id="hb-legend">
+        <div class="hb-section-title">9 — Legend & Reference</div>
+        <div class="hb-h3">Status Badges</div>
+        <table class="hb-legend">
+          <tr><th>Badge</th><th>Colour</th><th>Meaning</th></tr>
+          <tr><td><span class="badge allocated">Allocated</span></td><td>Green</td><td>Tree correctly inside its registered field polygon</td></tr>
+          <tr><td><span class="badge mismatch">Allocated - Field mismatch</span></td><td>Amber</td><td>Inside a polygon but field ID or owner does not match tree record</td></tr>
+          <tr><td><span class="badge outside">Outside polygon</span></td><td>Red</td><td>GPS coordinate outside all field polygons, no field tag</td></tr>
+          <tr><td><span class="badge outside-tagged">Outside + field tagged</span></td><td>Purple</td><td>GPS outside polygons but tree record has a field ID</td></tr>
+          <tr><td><span class="badge missing">Missing coordinates</span></td><td>Grey</td><td>Tree record has no GPS coordinates</td></tr>
+        </table>
+        <div class="hb-h3">Validation Flags</div>
+        <table class="hb-legend">
+          <tr><th>Flag</th><th>Meaning</th></tr>
+          <tr><td><span class="flag-yes">✓</span> Field ✓</td><td>Tree's Field ID matches the spatially matched polygon's Field ID</td></tr>
+          <tr><td><span class="flag-no">✗</span> Field ✓</td><td>Tree's Field ID does not match the matched polygon</td></tr>
+          <tr><td><span class="flag-yes">✓</span> Owner ✓</td><td>Tree's Field Owner matches the matched polygon's owner</td></tr>
+          <tr><td><span class="flag-no">✗</span> Owner ✓</td><td>Tree's Field Owner does not match the matched polygon</td></tr>
+        </table>
+        <div class="hb-h3">Suspect Field Mismatch Rate Colours</div>
+        <table class="hb-legend">
+          <tr><th>Colour</th><th>Rate</th><th>Interpretation</th></tr>
+          <tr><td><span style="color:var(--red)">■ Red bar</span></td><td>≥ 90%</td><td>Almost certainly a misplaced polygon — prioritise for correction</td></tr>
+          <tr><td><span style="color:var(--amber)">■ Amber bar</span></td><td>50–89%</td><td>High mismatch — investigate polygon boundary and tree records</td></tr>
+        </table>
+        <div class="hb-h3">Side Length Colours (Map)</div>
+        <table class="hb-legend">
+          <tr><th>Colour</th><th>Meaning</th></tr>
+          <tr><td><span class="green">Green label</span></td><td>Side within 15% of 20m target (17–23m) — acceptable</td></tr>
+          <tr><td><span style="color:var(--text)">Yellow/white label</span></td><td>Side 15–30% off target — borderline</td></tr>
+          <tr><td><span class="red">Red label</span></td><td>Side more than 30% off target — review polygon boundary</td></tr>
+        </table>
+        <div class="hb-h3">Related Tools</div>
+        <div class="hb-p"><strong>CCS Polygon Corrector</strong> — <a href="https://communityclimate.github.io/ccs-polygon-corrector/" target="_blank" style="color:var(--blue)">communityclimate.github.io/ccs-polygon-corrector</a> — use to correct polygon boundaries identified as suspect in this tool.</div>
+        <div class="hb-p"><strong>CCS Tree Catalog</strong> — field-by-field visual grid showing all trees per polygon with compliance status.</div>
+      </div>
+
+
+      <!-- HOW ALLOCATION WORKS -->
+      <div class="hb-section" id="hb-how">
+        <div class="hb-section-title">10 — How Allocation Works</div>
+        <div class="hb-p">This section explains in plain language how the system decides which field each tree belongs to — and what the results mean.</div>
+
+        <div class="hb-h3">What are we trying to do?</div>
+        <div class="hb-p">Every planted tree has two pieces of information: a <strong>GPS location</strong> recorded at planting, and a <strong>field record</strong> — the field the officer said the tree was planted in. Allocation checks whether these two pieces of information agree.</div>
+        <div class="hb-tip">💡 In simple terms: the system asks "Is this tree physically inside the field it says it belongs to?" If yes — Allocated. If no — flagged for review.</div>
+
+        <div class="hb-h3">What is a field polygon?</div>
+        <div class="hb-p">A field polygon is a digital boundary drawn around a registered field — a set of GPS coordinates tracing the outline of the field on a map. Think of it like drawing a fence around each field. The system checks whether each tree's GPS pin falls inside or outside that fence.</div>
+
+        <div class="hb-h3">The matching priority</div>
+        <div class="hb-p">When a tree's GPS lands inside more than one polygon, the system picks the best match using this priority order:</div>
+        <table class="hb-legend">
+          <tr><th>Priority</th><th>Condition</th><th>Result</th></tr>
+          <tr><td><strong>1st</strong></td><td>GPS inside polygon AND field ID on tree matches polygon</td><td><span class="green">Allocated</span></td></tr>
+          <tr><td><strong>2nd</strong></td><td>GPS inside polygon AND owner name matches polygon</td><td><span class="green">Allocated</span></td></tr>
+          <tr><td><strong>3rd</strong></td><td>GPS inside polygon (no admin match found)</td><td><span class="amber">Field Mismatch</span></td></tr>
+          <tr><td><strong>None</strong></td><td>GPS outside all polygons</td><td><span class="red">Outside Polygon</span></td></tr>
+        </table>
+
+        <div class="hb-h3">What causes a mismatch?</div>
+        <div class="hb-p"><strong>Most common cause — the polygon boundary is in the wrong place.</strong> If a field polygon has been drawn incorrectly, trees with correct GPS coordinates will land outside the polygon, or inside a neighbouring one. The trees are fine. The polygon needs correcting.</div>
+        <div class="hb-p"><strong>Second cause — field ID not recorded at planting.</strong> If a tree was submitted without a field ID, the system assigns the nearest polygon but flags it as a mismatch because it cannot confirm the match. This is a data entry gap.</div>
+        <div class="hb-warn">⚠ A mismatch is not necessarily a mistake by the farmer or field officer. When every tree in a field is mismatched, it almost always means the polygon boundary needs to be redrawn — not that every tree is in the wrong place.</div>
+
+        <div class="hb-h3">Suspect fields and the Work Queue</div>
+        <div class="hb-p">Any field where 80% or more of its trees are mismatched is flagged as a <strong>suspect field</strong> and added to the <strong>Work Queue</strong>. When a polygon is corrected and allocation re-runs, the task automatically moves to "Verified clean" if the mismatch rate drops below the threshold. No manual update needed.</div>
+      </div>
+
+    </div><!-- end hb-body -->
+  </div><!-- end handbook-drawer -->
+</div><!-- end handbook-overlay -->
+<script>
+
+// ── Why Errors Overlay ────────────────────────────────────────────────────
+function openWhyErrors() {
+  const outside  = document.getElementById('kpiOutside')?.textContent;
+  const mismatch = document.getElementById('kpiMismatch')?.textContent;
+  if (outside  && outside  !== '—') document.getElementById('weStatOutside').textContent  = outside;
+  if (mismatch && mismatch !== '—') document.getElementById('weStatMismatch').textContent = mismatch;
+  const suspectRows = document.querySelectorAll('#suspectTable tr[data-field]');
+  if (suspectRows.length > 0) document.getElementById('weStatSuspect').textContent = suspectRows.length.toLocaleString();
+  document.getElementById('weOverlay').classList.add('open');
+}
+function closeWhyErrors() {
+  document.getElementById('weOverlay').classList.remove('open');
+}
+
+// ── User Handbook ─────────────────────────────────────────────────────────────
+function openHandbook() {
+  document.getElementById('handbookOverlay').classList.add('open');
+  document.getElementById('hbSearch').focus();
+}
+function closeHandbook() {
+  document.getElementById('handbookOverlay').classList.remove('open');
+}
+function closeHandbookIfOutside(e) {
+  if (e.target === document.getElementById('handbookOverlay')) closeHandbook();
+}
+function hbScrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function searchHandbook(q) {
+  const body = document.getElementById('hbBody');
+  body.querySelectorAll('.hb-highlight').forEach(el => {
+    el.outerHTML = el.textContent;
+  });
+  if (!q || q.length < 2) return;
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  nodes.forEach(node => {
+    if (!node.textContent.match(re)) return;
+    const span = document.createElement('span');
+    span.innerHTML = node.textContent.replace(re, m => `<span class="hb-highlight">${m}</span>`);
+    node.parentNode.replaceChild(span, node);
+  });
+  const first = body.querySelector('.hb-highlight');
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeHandbook();
+});
+
+</script>
 </body>
 </html>
