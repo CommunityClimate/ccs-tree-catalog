@@ -612,6 +612,63 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
 .field-link.tree-field  { color: var(--muted); }
 .field-link.matched-field { color: var(--green); }
 
+/* ── OVERLAPPING FIELDS PANEL ────────────────────────────────────────────── */
+.overlap-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 14px; overflow: hidden;
+}
+.overlap-title {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.overlap-title-text {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--purple);
+  flex: 1;
+}
+.overlap-summary {
+  font-size: 10px; color: var(--muted); font-family: var(--font-mono);
+}
+.overlap-table-wrap { max-height: 260px; overflow-y: auto; }
+.overlap-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.overlap-tbl th {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+  padding: 6px 12px; border-bottom: 1px solid var(--border);
+  text-align: left; white-space: nowrap; position: sticky; top: 0;
+  background: var(--card);
+}
+.overlap-tbl td {
+  padding: 7px 12px; border-bottom: 1px solid var(--faint);
+  vertical-align: middle;
+}
+.overlap-tbl tr:hover td { background: rgba(167,139,250,0.05); }
+.overlap-field-link {
+  color: var(--blue); font-family: var(--font-mono); font-size: 10px;
+  font-weight: 700; cursor: pointer; text-decoration: none;
+  white-space: nowrap;
+}
+.overlap-field-link:hover { text-decoration: underline; }
+.overlap-pct-bar {
+  display: flex; align-items: center; gap: 8px;
+}
+.overlap-bar-track {
+  flex: 1; height: 5px; background: var(--border); border-radius: 3px;
+  overflow: hidden; min-width: 60px;
+}
+.overlap-bar-fill { height: 100%; border-radius: 3px; }
+.overlap-severity {
+  font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+  font-family: var(--font-mono); white-space: nowrap;
+}
+.overlap-sev-high  { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-b); }
+.overlap-sev-med   { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-b); }
+.overlap-sev-low   { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue-b); }
+.overlap-trees-at-risk { color: var(--red); font-weight: 700; font-family: var(--font-mono); }
+.overlap-empty { padding: 20px; text-align: center; font-size: 11px; color: var(--muted);
+  font-family: var(--font-mono); }
+
 /* ── WHY ERRORS OVERLAY ──────────────────────────────────────────────────── */
 .we-overlay {
   position: fixed; inset: 0; z-index: 10000;
@@ -1302,6 +1359,31 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
               </tr>
             </thead>
             <tbody id="suspectBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Overlapping Fields panel -->
+      <div class="overlap-panel" id="overlapPanel" style="display:none">
+        <div class="overlap-title">
+          <span style="font-size:14px">⧖</span>
+          <span class="overlap-title-text">Overlapping field polygons — possible mismatch source</span>
+          <span class="overlap-summary" id="overlapSummary"></span>
+        </div>
+        <div class="overlap-table-wrap">
+          <table class="overlap-tbl">
+            <thead>
+              <tr>
+                <th>Field A</th>
+                <th>Owner A</th>
+                <th>Field B</th>
+                <th>Owner B</th>
+                <th>Overlap area</th>
+                <th>Trees at risk</th>
+                <th>Severity</th>
+              </tr>
+            </thead>
+            <tbody id="overlapBody"></tbody>
           </table>
         </div>
       </div>
@@ -2242,6 +2324,7 @@ async function runAllocation() {
   updateExceptions();
   buildSuspectFieldStats();
   updateSuspectTable();
+  detectOverlappingFields();
   syncWorkQueue(); // populate queue immediately after allocation
   document.getElementById('filterSection').style.display = '';
   document.getElementById('btnExport').disabled = false;
@@ -3046,6 +3129,114 @@ function buildSuspectFieldStats() {
     .filter(s => s.inside >= 2)
     .map(s => ({ ...s, rate: s.inside > 0 ? s.mismatch / s.inside : 0 }))
     .sort((a, b) => b.rate - a.rate);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OVERLAPPING FIELDS DETECTION
+// ═══════════════════════════════════════════════════════════════════════════
+
+function detectOverlappingFields() {
+  const panel = document.getElementById('overlapPanel');
+  const body  = document.getElementById('overlapBody');
+  const fields = fieldsData.filter(f => f.ring && f.ring.length >= 3);
+  if (fields.length < 2) { panel.style.display = 'none'; return; }
+
+  // Build bounding boxes for fast pre-filter
+  function bbox(ring) {
+    let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+    ring.forEach(([x,y]) => { if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; });
+    return { minX, maxX, minY, maxY };
+  }
+  function bboxOverlap(a, b) {
+    return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
+  }
+
+  // Estimate overlap area using sampled vertex containment
+  // Returns fraction of field A's vertices inside field B and vice versa
+  function overlapScore(ringA, ringB) {
+    let aInB = 0, bInA = 0;
+    const sampleA = ringA.length > 20 ? ringA.filter((_,i) => i % Math.ceil(ringA.length/20) === 0) : ringA;
+    const sampleB = ringB.length > 20 ? ringB.filter((_,i) => i % Math.ceil(ringB.length/20) === 0) : ringB;
+    sampleA.forEach(([lng,lat]) => { if (pip(lat, lng, ringB)) aInB++; });
+    sampleB.forEach(([lng,lat]) => { if (pip(lat, lng, ringA)) bInA++; });
+    return Math.max(aInB / sampleA.length, bInA / sampleB.length);
+  }
+
+  // Count trees in overlap zone (inside both polygons)
+  function treesInOverlap(ringA, ringB) {
+    return (treesData || []).filter(t => {
+      if (!t.lat || !t.lng) return false;
+      return pip(t.lat, t.lng, ringA) && pip(t.lat, t.lng, ringB);
+    }).length;
+  }
+
+  const boxes  = fields.map(f => bbox(f.ring));
+  const pairs  = [];
+  const MIN_SCORE = 0.05; // at least 5% vertex overlap to count
+
+  for (let i = 0; i < fields.length; i++) {
+    for (let j = i + 1; j < fields.length; j++) {
+      if (!bboxOverlap(boxes[i], boxes[j])) continue;
+      const score = overlapScore(fields[i].ring, fields[j].ring);
+      if (score < MIN_SCORE) continue;
+      const treeRisk = treesInOverlap(fields[i].ring, fields[j].ring);
+      pairs.push({
+        fA: fields[i], fB: fields[j],
+        score, treeRisk,
+        severity: score >= 0.4 ? 'high' : score >= 0.15 ? 'med' : 'low'
+      });
+    }
+  }
+
+  if (!pairs.length) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  // Sort by severity then tree risk
+  pairs.sort((a, b) => b.score - a.score || b.treeRisk - a.treeRisk);
+
+  document.getElementById('overlapSummary').textContent =
+    `${pairs.length} overlapping pair${pairs.length !== 1 ? 's' : ''} · ` +
+    `${pairs.reduce((s,p) => s + p.treeRisk, 0).toLocaleString()} trees at risk`;
+
+  body.innerHTML = pairs.slice(0, 50).map(p => {
+    const pct  = Math.round(p.score * 100);
+    const col  = p.severity === 'high' ? 'var(--red)' : p.severity === 'med' ? 'var(--amber)' : 'var(--blue)';
+    const sevLabel = p.severity === 'high' ? 'High' : p.severity === 'med' ? 'Medium' : 'Low';
+    const sevClass = `overlap-sev-${p.severity}`;
+    return `<tr>
+      <td><span class="overlap-field-link" onclick="jumpToField('${p.fA.fieldId}')">${p.fA.fieldId}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${p.fA.owner || '—'}</td>
+      <td><span class="overlap-field-link" onclick="jumpToField('${p.fB.fieldId}')">${p.fB.fieldId}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${p.fB.owner || '—'}</td>
+      <td>
+        <div class="overlap-pct-bar">
+          <div class="overlap-bar-track">
+            <div class="overlap-bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:${col};min-width:32px">${pct}%</span>
+        </div>
+      </td>
+      <td class="overlap-trees-at-risk">${p.treeRisk > 0 ? p.treeRisk.toLocaleString() : '<span style="color:var(--muted)">0</span>'}</td>
+      <td><span class="overlap-severity ${sevClass}">${sevLabel}</span></td>
+    </tr>`;
+  }).join('');
+
+  panel.style.display = '';
+}
+
+// jumpToField — switch to Field Map tab and select the field
+function jumpToField(fieldId) {
+  const f = fieldsData.find(x => x.fieldId === fieldId);
+  if (!f) return;
+  switchTab('map');
+  setTimeout(() => {
+    const items = document.querySelectorAll('.field-item');
+    items.forEach(el => {
+      if (el.textContent.includes(fieldId)) { el.click(); el.scrollIntoView({block:'center'}); }
+    });
+  }, 150);
 }
 
 function updateSuspectTable() {
@@ -3981,7 +4172,7 @@ function generateReportCSV(data) {
       </div>
 
       <div class="we-sec-label">The three causes — ranked by frequency</div>
-      <div class="we-causes">
+      <div class="we-causes" style="grid-template-columns:repeat(2,1fr)">
         <div class="we-cause" style="border-color:var(--red-b)">
           <div class="we-cause-rank" style="color:var(--red)">Cause 1 — most common</div>
           <div class="we-cause-pct" style="color:var(--red)">99.8%</div>
@@ -3989,15 +4180,22 @@ function generateReportCSV(data) {
           <div class="we-cause-desc">The field polygon was drawn incorrectly — offset, too small, or at the wrong location entirely. Every planted tree in that field appears outside or mismatched, even though the trees are exactly where they were planted.</div>
           <div class="we-cause-action" style="color:var(--red);border-color:var(--red-b);background:var(--red-bg)">Fix: redraw boundary in the Polygon Corrector</div>
         </div>
+        <div class="we-cause" style="border-color:var(--purple);background:rgba(167,139,250,0.05)">
+          <div class="we-cause-rank" style="color:var(--purple)">Cause 2 — detectable</div>
+          <div class="we-cause-pct" style="color:var(--purple)">Variable</div>
+          <div class="we-cause-title">Two field boundaries overlap each other</div>
+          <div class="we-cause-desc">When two field polygons overlap, any planted tree in the shared zone lands inside both boundaries simultaneously. The system assigns it to one field — meaning the other field counts it as a mismatch. The Overlapping Fields panel above detects these pairs automatically.</div>
+          <div class="we-cause-action" style="color:var(--purple);border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.08)">Fix: separate the overlapping boundaries</div>
+        </div>
         <div class="we-cause" style="border-color:var(--blue-b)">
-          <div class="we-cause-rank" style="color:var(--blue)">Cause 2 — rare</div>
+          <div class="we-cause-rank" style="color:var(--blue)">Cause 3 — rare</div>
           <div class="we-cause-pct" style="color:var(--blue)">&lt; 1%</div>
           <div class="we-cause-title">GPS reading had high error at planting</div>
           <div class="we-cause-desc">The phone's GPS was inaccurate at the moment of recording — heavy forest cover or too few satellites. The planted tree lands slightly outside a correctly drawn boundary. Identifiable from the GPS accuracy reading in Fieldforce.</div>
           <div class="we-cause-action" style="color:var(--blue);border-color:var(--blue-b);background:var(--blue-bg)">Fix: verify GPS accuracy reading in Fieldforce</div>
         </div>
         <div class="we-cause" style="border-color:var(--green-b)">
-          <div class="we-cause-rank" style="color:var(--green)">Cause 3 — data entry</div>
+          <div class="we-cause-rank" style="color:var(--green)">Cause 4 — data entry</div>
           <div class="we-cause-pct" style="color:var(--green)">0.2%</div>
           <div class="we-cause-title">Field ID not recorded at planting</div>
           <div class="we-cause-desc">The field officer did not select a field name when recording the planted tree. The system finds the nearest field polygon spatially but cannot confirm it, so it flags the tree for review. This is a blank field tag — not a location error.</div>
