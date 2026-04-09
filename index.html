@@ -57,12 +57,13 @@ body {
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 16px;
+  padding: 0 12px;
   height: 48px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .logo {
   display: flex; align-items: center; gap: 8px;
@@ -956,14 +957,14 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     <div class="kpi-chip amber"><span class="kv" id="kpiReview">—</span><span class="kl">Review</span></div>
   </div>
   <div class="header-spacer"></div>
-  <button class="btn" onclick="openHandbook()" style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:6px 12px">? Help</button>
-  <button class="btn btn-amber" id="btnExport" onclick="exportCSV()" disabled>⬇ Export CSV</button>
+  <button class="btn" onclick="openHandbook()" style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:5px 10px;white-space:nowrap">? Help</button>
+  <button class="btn btn-amber" id="btnExport" onclick="exportCSV()" disabled style="padding:5px 10px;white-space:nowrap">⬇ Export CSV</button>
   <button class="btn btn-blue" id="btnSaveDV" onclick="saveToFieldforce()" disabled
-    style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b)">
-    ☁ Save to Fieldforce
+    style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:5px 10px;white-space:nowrap">
+    ☁ Fieldforce
   </button>
-  <button class="btn btn-secondary" id="btnReport" onclick="showReportModal()" disabled>
-    📄 Compliance Report
+  <button class="btn btn-secondary" id="btnReport" onclick="showReportModal()" disabled style="padding:5px 10px;white-space:nowrap">
+    📄 Report
   </button>
 </header>
 
@@ -4295,6 +4296,7 @@ function generateReportCSV(data) {
 
 // ── Why Errors Overlay ────────────────────────────────────────────────────
 function openWhyErrors() {
+  closeHandbook(); // ensure handbook doesn't stack
   const outside  = document.getElementById('kpiOutside')?.textContent;
   const mismatch = document.getElementById('kpiMismatch')?.textContent;
   if (outside  && outside  !== '—') document.getElementById('weStatOutside').textContent  = outside;
@@ -4309,6 +4311,7 @@ function closeWhyErrors() {
 
 // ── User Handbook ─────────────────────────────────────────────────────────────
 function openHandbook() {
+  closeWhyErrors(); // ensure why-errors doesn't stack
   document.getElementById('handbookOverlay').classList.add('open');
   document.getElementById('hbSearch').focus();
 }
@@ -4342,7 +4345,7 @@ function searchHandbook(q) {
   if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeHandbook();
+  if (e.key === 'Escape') { closeHandbook(); closeWhyErrors(); }
 });
 
 </script>
