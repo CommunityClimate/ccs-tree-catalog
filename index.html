@@ -1080,7 +1080,30 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
   </div>
   <div class="header-spacer"></div>
   <button class="btn" onclick="openHandbook()" style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:5px 10px;white-space:nowrap">? Help</button>
-  <button class="btn btn-amber" id="btnExport" onclick="exportCSV()" disabled style="padding:5px 10px;white-space:nowrap">⬇ Export CSV</button>
+  <div style="position:relative;display:inline-block" id="exportDropWrap">
+    <button class="btn btn-amber" id="btnExport" onclick="toggleExportMenu()" disabled
+      style="padding:5px 10px;white-space:nowrap">⬇ Export ▾</button>
+    <div id="exportMenu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;
+      background:var(--panel);border:1px solid var(--border);border-radius:6px;
+      min-width:220px;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden">
+      <div onclick="exportCSV();toggleExportMenu()"
+        style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
+        font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
+        onmouseenter="this.style.background='var(--card)'"
+        onmouseleave="this.style.background=''">
+        <div style="font-weight:700;margin-bottom:2px">⬇ Tree Export</div>
+        <div style="font-size:10px;color:var(--muted)">One row per tree — GPS, status, allocation result</div>
+      </div>
+      <div onclick="exportFieldCSV();toggleExportMenu()"
+        style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
+        font-family:var(--font-sans);transition:background .12s"
+        onmouseenter="this.style.background='var(--card)'"
+        onmouseleave="this.style.background=''">
+        <div style="font-weight:700;margin-bottom:2px">⬇ Field Summary Export</div>
+        <div style="font-size:10px;color:var(--muted)">One row per field — mismatches, status, priority</div>
+      </div>
+    </div>
+  </div>
   <button class="btn btn-blue" id="btnSaveDV" onclick="saveToFieldforce()" disabled
     style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:5px 10px;white-space:nowrap">
     ☁ Fieldforce
@@ -3528,6 +3551,129 @@ function exportCSV() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url; a.download = `CCS_Active_Tree_Catalog_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+function toggleExportMenu() {
+  const menu = document.getElementById('exportMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+// Close export menu when clicking elsewhere
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('exportDropWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('exportMenu').style.display = 'none';
+  }
+});
+
+function exportFieldCSV() {
+  if (!allocation.length || !fieldsData.length) return;
+
+  // ── Build per-field stats from allocation ──────────────────────────────
+  const byField = {};
+
+  // Seed every field that has geometry
+  fieldsData.forEach(f => {
+    byField[f.fieldId] = {
+      fieldId:   f.fieldId,
+      owner:     f.owner   || '',
+      nrc:       f.nrc     || '',
+      zone:      f.zone    || '',
+      sizeM2:    f.size    || '',
+      hasPolygon: !!f.ring,
+      // centroid of polygon ring
+      centroidLat: f.ring ? (f.ring.reduce((s,c) => s + c[1], 0) / f.ring.length).toFixed(6) : '',
+      centroidLng: f.ring ? (f.ring.reduce((s,c) => s + c[0], 0) / f.ring.length).toFixed(6) : '',
+      total:      0,
+      allocated:  0,
+      mismatch:   0,
+      outside:    0,
+      outsideTagged: 0,
+      blankField: 0,
+    };
+  });
+
+  // Tally allocation results per field
+  allocation.forEach(r => {
+    const fid = r.matchedFieldId;
+    if (!fid || !byField[fid]) return;
+    const s = byField[fid];
+    s.total++;
+    if      (r.status === 'Allocated')                            s.allocated++;
+    else if (r.status && r.status.includes('mismatch'))           s.mismatch++;
+    else if (r.status === 'Outside polygon but field tagged')      s.outsideTagged++;
+    else if (r.status === 'Outside polygon')                       s.outside++;
+    if (!r.treeField || r.treeField.trim() === '')                 s.blankField++;
+  });
+
+  // Compute derived columns
+  const rows = Object.values(byField).map(s => {
+    const mmRate    = s.total > 0 ? (s.mismatch / s.total * 100).toFixed(1) : '0.0';
+    const compRate  = s.total > 0 ? ((s.allocated / s.total) * 100).toFixed(1) : '0.0';
+    const errTotal  = s.mismatch + s.outside + s.outsideTagged;
+    let priority = '';
+    if (!s.hasPolygon)                    priority = 'No polygon — draw boundary first';
+    else if (parseFloat(mmRate) >= 80)    priority = '1 — Redraw boundary urgently';
+    else if (parseFloat(mmRate) >= 40)    priority = '2 — Review boundary';
+    else if (parseFloat(mmRate) >= 10)    priority = '3 — Investigate individual trees';
+    else if (errTotal > 0)                priority = '4 — Minor issues — monitor';
+    else                                  priority = '5 — Clean — no action needed';
+
+    return [
+      s.fieldId,
+      s.owner,
+      s.nrc,
+      s.zone,
+      s.sizeM2 ? Math.round(s.sizeM2) : '',
+      s.hasPolygon ? 'Yes' : 'No',
+      s.centroidLat,
+      s.centroidLng,
+      s.total,
+      s.allocated,
+      s.mismatch,
+      s.outside,
+      s.outsideTagged,
+      s.blankField,
+      mmRate,
+      compRate,
+      priority,
+    ];
+  });
+
+  // Sort by mismatch rate descending (worst first)
+  rows.sort((a, b) => parseFloat(b[14]) - parseFloat(a[14]));
+
+  const header = [
+    'Field ID',
+    'Field Owner',
+    'Owner NRC',
+    'Zone',
+    'Field Size (m²)',
+    'Has Polygon',
+    'Centroid Latitude',
+    'Centroid Longitude',
+    'Total Trees',
+    'Allocated',
+    'Mismatches',
+    'Outside Polygon',
+    'Outside + Field Tagged',
+    'Blank Field ID',
+    'Mismatch Rate (%)',
+    'Compliance Rate (%)',
+    'Priority / Action Required',
+  ];
+
+  const csvRows = [header, ...rows];
+  const csv = csvRows.map(r =>
+    r.map(v => `"${String(v === null || v === undefined ? '' : v).replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `CCS_Field_Summary_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
 }
