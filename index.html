@@ -669,7 +669,72 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
 .overlap-empty { padding: 20px; text-align: center; font-size: 11px; color: var(--muted);
   font-family: var(--font-mono); }
 
-/* ── WHY ERRORS OVERLAY ──────────────────────────────────────────────────── */
+/* ── OVERLAP DIAGNOSTIC LIGHTBOX ─────────────────────────────────────────── */
+.ovlb-overlay {
+  position: fixed; inset: 0; z-index: 11000;
+  background: rgba(4,8,14,0.92);
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 24px 16px;
+}
+.ovlb-overlay.open { display: flex; }
+.ovlb-panel {
+  width: min(980px,96vw); max-height: 92vh;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,.8);
+  animation: weSlideIn .2s ease;
+}
+.ovlb-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.ovlb-title { font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--purple); text-transform: uppercase; flex: 1; }
+.ovlb-close { background: var(--border); border: none; color: var(--text);
+  width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.ovlb-close:hover { background: var(--red); color: #fff; }
+.ovlb-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.ovlb-map { flex: 1; min-width: 0; min-height: 400px; background: #0a0c12; }
+.ovlb-sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column;
+  border-left: 1px solid var(--border); overflow-y: auto; }
+.ovlb-field-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ovlb-field-card { padding: 14px 16px; border-right: 1px solid var(--border); }
+.ovlb-field-card:last-child { border-right: none; }
+.ovlb-fc-label { font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 4px; }
+.ovlb-fc-id { font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--text); margin-bottom: 3px; word-break: break-all; }
+.ovlb-fc-owner { font-size: 10px; color: var(--muted); margin-bottom: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovlb-fc-stat { display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid var(--faint); }
+.ovlb-fc-stat:last-child { border-bottom: none; }
+.ovlb-fc-stat-label { font-size: 10px; color: var(--muted); }
+.ovlb-fc-stat-val { font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+.ovlb-verdict { padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ovlb-verdict-title { font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; font-family: var(--font-mono); color: var(--muted); margin-bottom: 8px; }
+.ovlb-verdict-text { font-size: 12px; color: var(--text); line-height: 1.7; }
+.ovlb-verdict-text .hl-green { color: var(--green); font-weight: 700; }
+.ovlb-verdict-text .hl-red   { color: var(--red);   font-weight: 700; }
+.ovlb-verdict-text .hl-amber { color: var(--amber); font-weight: 700; }
+.ovlb-verdict-text .hl-purple{ color: var(--purple);font-weight: 700; }
+.ovlb-actions { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.ovlb-act-btn { display: block; text-align: center; padding: 8px 12px; border-radius: 5px;
+  font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid;
+  font-family: var(--font-mono); letter-spacing: .5px; text-decoration: none;
+  transition: opacity .15s; }
+.ovlb-act-btn:hover { opacity: .8; }
+.ovlb-legend { padding: 10px 16px; border-top: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+.ovlb-leg-item { display: flex; align-items: center; gap: 5px;
+  font-size: 10px; color: var(--muted); }
+.ovlb-leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.ovlb-leg-line { width: 16px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── OVERLAP DIAGNOSTIC LIGHTBOX ─────────────────────────────────────────── */
 .we-overlay {
   position: fixed; inset: 0; z-index: 10000;
   background: rgba(4,8,14,0.88);
@@ -3143,6 +3208,8 @@ function buildSuspectFieldStats() {
 // OVERLAPPING FIELDS DETECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
+let overlapPairsCache = [];
+
 async function detectOverlappingFields() {
   const panel = document.getElementById('overlapPanel');
   const body  = document.getElementById('overlapBody');
@@ -3197,20 +3264,23 @@ async function detectOverlappingFields() {
 
   if (!pairs.length) { panel.style.display='none'; return; }
   pairs.sort((a,b) => b.score-a.score || b.treeRisk-a.treeRisk);
+  overlapPairsCache = pairs;
 
   document.getElementById('overlapSummary').textContent =
     `${pairs.length}${pairs.length>=MAX_PAIRS?'+':''} overlapping pair${pairs.length!==1?'s':''} · ` +
     `~${pairs.reduce((s,p)=>s+p.treeRisk,0).toLocaleString()} trees at risk`;
 
-  body.innerHTML = pairs.slice(0,50).map(p => {
+  body.innerHTML = pairs.slice(0,50).map((p, rowIdx) => {
     const pct = Math.round(p.score*100);
     const col = p.severity==='high'?'var(--red)':p.severity==='med'?'var(--amber)':'var(--blue)';
     const sevClass = `overlap-sev-${p.severity}`;
     const sevLabel = p.severity==='high'?'High':p.severity==='med'?'Medium':'Low';
-    return `<tr>
-      <td><span class="overlap-field-link" onclick="jumpToField('${p.fA.fieldId}')">${p.fA.fieldId}</span></td>
+    return `<tr style="cursor:pointer" onclick="openOverlapLightbox(${rowIdx})"
+      onmouseenter="this.style.background='rgba(167,139,250,0.07)'"
+      onmouseleave="this.style.background=''">
+      <td><span class="overlap-field-link">${p.fA.fieldId}</span></td>
       <td style="font-size:11px;color:var(--muted)">${p.fA.owner||'—'}</td>
-      <td><span class="overlap-field-link" onclick="jumpToField('${p.fB.fieldId}')">${p.fB.fieldId}</span></td>
+      <td><span class="overlap-field-link">${p.fB.fieldId}</span></td>
       <td style="font-size:11px;color:var(--muted)">${p.fB.owner||'—'}</td>
       <td><div class="overlap-pct-bar">
         <div class="overlap-bar-track"><div class="overlap-bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
@@ -3242,6 +3312,171 @@ function showOverlapPanel() {
       setTimeout(() => panel.style.outline = '', 1800);
     }
   }, 200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OVERLAP DIAGNOSTIC LIGHTBOX
+// ═══════════════════════════════════════════════════════════════════════════
+
+let ovlbMap = null;
+
+function openOverlapLightbox(idx) {
+  const pair = overlapPairsCache[idx];
+  if (!pair) return;
+
+  document.getElementById('ovlbOverlay').classList.add('open');
+  closeHandbook(); closeWhyErrors();
+
+  const fA = pair.fA, fB = pair.fB;
+  const pct = Math.round(pair.score * 100);
+
+  // ── Field stats from allocation ──────────────────────────────────────────
+  function fieldStats(fieldId, ringA, ringB) {
+    const trees = allocation.filter(r => r.matchedFieldId === fieldId);
+    const total = trees.length;
+    const mismatches = trees.filter(r => r.status && r.status.includes('mismatch')).length;
+    const outside    = trees.filter(r => !r.insidePolygon).length;
+    const inOverlap  = trees.filter(r =>
+      r.lat && r.lng && pip(r.lat, r.lng, ringA) && pip(r.lat, r.lng, ringB)
+    ).length;
+    const mmRate = total > 0 ? Math.round(mismatches / total * 100) : 0;
+    return { total, mismatches, outside, inOverlap, mmRate };
+  }
+
+  const sA = fieldStats(fA.fieldId, fA.ring, fB.ring);
+  const sB = fieldStats(fB.fieldId, fB.ring, fA.ring);
+
+  // ── Field cards ──────────────────────────────────────────────────────────
+  function cardHTML(f, s, col, label) {
+    const mmCol = s.mmRate >= 80 ? 'var(--red)' : s.mmRate >= 40 ? 'var(--amber)' : 'var(--green)';
+    return `<div class="ovlb-field-card">
+      <div class="ovlb-fc-label" style="color:${col}">${label}</div>
+      <div class="ovlb-fc-id">${f.fieldId}</div>
+      <div class="ovlb-fc-owner">${f.owner || '—'}</div>
+      <div class="ovlb-fc-stat"><span class="ovlb-fc-stat-label">Total trees</span>
+        <span class="ovlb-fc-stat-val">${s.total.toLocaleString()}</span></div>
+      <div class="ovlb-fc-stat"><span class="ovlb-fc-stat-label">Mismatches</span>
+        <span class="ovlb-fc-stat-val" style="color:${mmCol}">${s.mismatches.toLocaleString()} (${s.mmRate}%)</span></div>
+      <div class="ovlb-fc-stat"><span class="ovlb-fc-stat-label">In overlap zone</span>
+        <span class="ovlb-fc-stat-val" style="color:var(--purple)">${s.inOverlap.toLocaleString()}</span></div>
+      <div class="ovlb-fc-stat"><span class="ovlb-fc-stat-label">Outside polygon</span>
+        <span class="ovlb-fc-stat-val" style="color:var(--red)">${s.outside.toLocaleString()}</span></div>
+    </div>`;
+  }
+  document.getElementById('ovlbFieldCards').innerHTML =
+    cardHTML(fA, sA, '#60a5fa', 'Field A') + cardHTML(fB, sB, '#fbbf24', 'Field B');
+
+  // ── Verdict ──────────────────────────────────────────────────────────────
+  const totalAtRisk = sA.inOverlap + sB.inOverlap;
+  const totalMM     = sA.mismatches + sB.mismatches;
+  const overlapDriven = totalMM > 0 && totalAtRisk > 0;
+  const pctExplained  = totalMM > 0 ? Math.min(100, Math.round(totalAtRisk / totalMM * 100)) : 0;
+
+  let verdictText = '';
+  if (pct >= 40) {
+    verdictText = `These two field boundaries <span class="hl-red">overlap by ${pct}%</span> — a major boundary conflict. `;
+  } else if (pct >= 15) {
+    verdictText = `These two field boundaries <span class="hl-amber">overlap by ${pct}%</span> — a moderate boundary conflict. `;
+  } else {
+    verdictText = `These two boundaries <span class="hl-purple">partially overlap (${pct}%)</span>. `;
+  }
+
+  if (totalAtRisk > 0) {
+    verdictText += `<span class="hl-purple">${totalAtRisk.toLocaleString()} planted trees</span> sit in the shared zone — they land inside both polygons simultaneously, forcing the system to pick one and flag the other as a mismatch. `;
+  }
+  if (overlapDriven && pctExplained >= 30) {
+    verdictText += `The overlap zone likely explains <span class="hl-amber">~${pctExplained}% of the combined mismatches</span> between these two fields. `;
+  }
+  verdictText += `<br><br><strong>Fix:</strong> Separate the boundaries in the Polygon Corrector so they no longer share any area. Re-run allocation to verify the mismatch rate drops.`;
+
+  document.getElementById('ovlbVerdict').innerHTML =
+    `<div class="ovlb-verdict-title">Diagnostic</div>
+     <div class="ovlb-verdict-text">${verdictText}</div>`;
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+  const correctorBase = 'https://communityclimate.github.io/ccs-polygon-corrector/';
+  document.getElementById('ovlbActions').innerHTML = `
+    <a class="ovlb-act-btn" href="${correctorBase}" target="_blank"
+      style="background:var(--green-bg);color:var(--green);border-color:var(--green-b)">
+      ✏ Fix Field A in Polygon Corrector →
+    </a>
+    <a class="ovlb-act-btn" href="${correctorBase}" target="_blank"
+      style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b)">
+      ✏ Fix Field B in Polygon Corrector →
+    </a>
+    <button class="ovlb-act-btn" onclick="jumpToField('${fA.fieldId}');closeOverlapLightbox()"
+      style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue-b)">
+      🗺 View Field A on map
+    </button>
+    <button class="ovlb-act-btn" onclick="jumpToField('${fB.fieldId}');closeOverlapLightbox()"
+      style="background:var(--blue-bg);color:var(--blue);border-color:var(--blue-b)">
+      🗺 View Field B on map
+    </button>`;
+
+  // ── Map ──────────────────────────────────────────────────────────────────
+  if (ovlbMap) { try { ovlbMap.remove(); } catch(e){} ovlbMap = null; }
+  const container = document.getElementById('ovlbMap');
+  container.innerHTML = '';
+
+  try {
+    ovlbMap = L.map(container, { zoomControl: true, attributionControl: false });
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 21
+    }).addTo(ovlbMap);
+
+    // Field A — blue
+    const polyA = L.polygon(fA.ring.map(c=>[c[1],c[0]]), {
+      color:'#60a5fa', weight:2.5, fillColor:'#60a5fa', fillOpacity:0.08, dashArray:'6,4'
+    }).addTo(ovlbMap);
+
+    // Field B — amber
+    const polyB = L.polygon(fB.ring.map(c=>[c[1],c[0]]), {
+      color:'#fbbf24', weight:2.5, fillColor:'#fbbf24', fillOpacity:0.08, dashArray:'6,4'
+    }).addTo(ovlbMap);
+
+    // Overlap zone approximation — centroid cluster of trees in both
+    const overlapTrees = allocation.filter(r =>
+      r.lat && r.lng && pip(r.lat,r.lng,fA.ring) && pip(r.lat,r.lng,fB.ring)
+    );
+    if (overlapTrees.length >= 3) {
+      // Draw convex hull approximation as a shaded zone
+      const pts = overlapTrees.map(t => [t.lat, t.lng]);
+      L.polygon(pts, {
+        color:'#ef4444', weight:0, fillColor:'#ef4444', fillOpacity:0.25
+      }).addTo(ovlbMap);
+    }
+
+    // Plot all trees for both fields
+    const bothTreeIds = new Set([fA.fieldId, fB.fieldId]);
+    const relevantTrees = allocation.filter(r => bothTreeIds.has(r.matchedFieldId) && r.lat && r.lng);
+    const step = relevantTrees.length > 300 ? Math.ceil(relevantTrees.length / 300) : 1;
+
+    relevantTrees.forEach((t, i) => {
+      if (i % step !== 0) return;
+      const inOverlap = pip(t.lat,t.lng,fA.ring) && pip(t.lat,t.lng,fB.ring);
+      const col = inOverlap ? '#a78bfa'
+        : t.status?.includes('mismatch') ? '#f59e0b'
+        : t.insidePolygon ? '#22c55e' : '#ef4444';
+      L.circleMarker([t.lat, t.lng], {
+        radius: inOverlap ? 5 : 4,
+        color: 'rgba(255,255,255,0.4)', weight: 0.5,
+        fillColor: col, fillOpacity: 0.9
+      }).bindPopup(`<b>${t.treeCode||'Tree'}</b><br>Status: ${t.status||'—'}<br>Field: ${t.matchedFieldId||'—'}`)
+        .addTo(ovlbMap);
+    });
+
+    // Fit to both polygons
+    const group = L.featureGroup([polyA, polyB]);
+    const fitIt = () => { try { ovlbMap.invalidateSize(); ovlbMap.fitBounds(group.getBounds(), {padding:[32,32]}); } catch(e){} };
+    fitIt(); setTimeout(fitIt, 150); setTimeout(fitIt, 500);
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--red);padding:20px;font-size:12px">Map error: ${e.message}</div>`;
+  }
+}
+
+function closeOverlapLightbox() {
+  document.getElementById('ovlbOverlay').classList.remove('open');
+  if (ovlbMap) { try { ovlbMap.remove(); } catch(e){} ovlbMap = null; }
 }
 
 // jumpToField — switch to Field Map tab and select the field
@@ -4159,6 +4394,32 @@ function generateReportCSV(data) {
 </button>
 
 
+<!-- ── OVERLAP DIAGNOSTIC LIGHTBOX ───────────────────────────────────── -->
+<div class="ovlb-overlay" id="ovlbOverlay" onclick="if(event.target===this)closeOverlapLightbox()">
+  <div class="ovlb-panel">
+    <div class="ovlb-header">
+      <span class="ovlb-title">⧖ Overlap diagnostic — field boundary conflict</span>
+      <button class="ovlb-close" onclick="closeOverlapLightbox()">✕</button>
+    </div>
+    <div class="ovlb-body">
+      <div class="ovlb-map" id="ovlbMap"></div>
+      <div class="ovlb-sidebar">
+        <div class="ovlb-field-cards" id="ovlbFieldCards"></div>
+        <div class="ovlb-verdict" id="ovlbVerdict"></div>
+        <div class="ovlb-actions" id="ovlbActions"></div>
+        <div class="ovlb-legend">
+          <div class="ovlb-leg-item"><div class="ovlb-leg-line" style="background:#60a5fa"></div>Field A boundary</div>
+          <div class="ovlb-leg-item"><div class="ovlb-leg-line" style="background:#fbbf24"></div>Field B boundary</div>
+          <div class="ovlb-leg-item"><div class="ovlb-leg-dot" style="background:rgba(239,68,68,0.5);border:1px solid #ef4444"></div>Overlap zone</div>
+          <div class="ovlb-leg-item"><div class="ovlb-leg-dot" style="background:#22c55e"></div>Tree — allocated</div>
+          <div class="ovlb-leg-item"><div class="ovlb-leg-dot" style="background:#f59e0b"></div>Tree — mismatch</div>
+          <div class="ovlb-leg-item"><div class="ovlb-leg-dot" style="background:#ef4444"></div>Tree — outside</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── WHY ERRORS OVERLAY ─────────────────────────────────────────────── -->
 <div class="we-overlay" id="weOverlay" onclick="if(event.target===this)closeWhyErrors()">
   <div class="we-panel">
@@ -4565,7 +4826,7 @@ function searchHandbook(q) {
   if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeHandbook(); closeWhyErrors(); }
+  if (e.key === 'Escape') { closeHandbook(); closeWhyErrors(); closeOverlapLightbox(); }
 });
 
 </script>
