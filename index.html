@@ -612,6 +612,11 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
 .field-link.tree-field  { color: var(--muted); }
 .field-link.matched-field { color: var(--green); }
 
+/* Exception table column filters */
+#excTable thead th { vertical-align: top; padding: 6px 8px; }
+#excTable thead input:focus,
+#excTable thead select:focus { border-color: var(--amber) !important; }
+
 /* ── OVERLAPPING FIELDS PANEL ────────────────────────────────────────────── */
 .overlap-panel {
   background: var(--panel); border: 1px solid var(--border);
@@ -1489,15 +1494,94 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
         <table class="catalog" id="excTable">
           <thead>
             <tr>
-              <th>Tree Code</th>
-              <th>Species</th>
-              <th>Tree Field</th>
-              <th>Matched Field</th>
-              <th>Field ✓</th>
-              <th>Owner ✓</th>
-              <th>Status</th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Tree Code</span>
+                  <input type="text" id="excF-treeCode" placeholder="Filter…"
+                    oninput="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;
+                    font-family:var(--font-mono);outline:none"/>
+                </div>
+              </th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Species</span>
+                  <input type="text" id="excF-species" placeholder="Filter…"
+                    oninput="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;outline:none"/>
+                </div>
+              </th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Tree Field</span>
+                  <input type="text" id="excF-treeField" placeholder="Filter…"
+                    oninput="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;
+                    font-family:var(--font-mono);outline:none"/>
+                </div>
+              </th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Matched Field</span>
+                  <input type="text" id="excF-matchedFieldId" placeholder="Filter…"
+                    oninput="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;
+                    font-family:var(--font-mono);outline:none"/>
+                </div>
+              </th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Field ✓</span>
+                  <select id="excF-fieldMatch" onchange="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 2px;outline:none">
+                    <option value="">All</option>
+                    <option value="yes">✓ Yes</option>
+                    <option value="no">✗ No</option>
+                    <option value="na">— N/A</option>
+                  </select>
+                </div>
+              </th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Owner ✓</span>
+                  <select id="excF-ownerMatch" onchange="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 2px;outline:none">
+                    <option value="">All</option>
+                    <option value="yes">✓ Yes</option>
+                    <option value="no">✗ No</option>
+                    <option value="na">— N/A</option>
+                  </select>
+                </div>
+              </th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Status</span>
+                  <select id="excF-status" onchange="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 2px;outline:none">
+                    <option value="">All</option>
+                    <option value="Outside polygon">Outside polygon</option>
+                    <option value="Outside polygon but field tagged">Outside + field tagged</option>
+                    <option value="Allocated - Field mismatch">Field mismatch</option>
+                  </select>
+                </div>
+              </th>
               <th>Coordinates</th>
-              <th>Submitted By</th>
+              <th>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span>Submitted By</span>
+                  <input type="text" id="excF-submittedBy" placeholder="Filter…"
+                    oninput="applyExcColFilters()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);
+                    border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;outline:none"/>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody id="excBody">
@@ -1962,6 +2046,22 @@ const PAGE_SIZE = 100;
 let selectedFieldId = null;
 let map = null, mapLayers = [];
 let excActiveFilter = null;
+let excColFilters   = {};
+
+function applyExcColFilters() {
+  // Read all column filter values
+  excColFilters = {
+    treeCode:       (document.getElementById('excF-treeCode')?.value       || '').toLowerCase().trim(),
+    species:        (document.getElementById('excF-species')?.value         || '').toLowerCase().trim(),
+    treeField:      (document.getElementById('excF-treeField')?.value       || '').toLowerCase().trim(),
+    matchedFieldId: (document.getElementById('excF-matchedFieldId')?.value  || '').toLowerCase().trim(),
+    fieldMatch:     (document.getElementById('excF-fieldMatch')?.value      || ''),
+    ownerMatch:     (document.getElementById('excF-ownerMatch')?.value      || ''),
+    status:         (document.getElementById('excF-status')?.value          || ''),
+    submittedBy:    (document.getElementById('excF-submittedBy')?.value     || '').toLowerCase().trim(),
+  };
+  renderExceptionsTable(excActiveFilter);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FILE LOADING
@@ -3496,11 +3596,27 @@ function filterException(status) {
 }
 
 function renderExceptionsTable(statusFilter) {
-  const allRows = allocation.filter(r => {
+  // Base status filter
+  let allRows = allocation.filter(r => {
     if (statusFilter) return r.status === statusFilter;
     return ['Outside polygon','Outside polygon but field tagged',
             'Allocated - Field mismatch'].includes(r.status);
   });
+
+  // Column filters
+  const cf = excColFilters || {};
+  if (cf.treeCode)       allRows = allRows.filter(r => (r.treeCode       || '').toLowerCase().includes(cf.treeCode));
+  if (cf.species)        allRows = allRows.filter(r => (r.species        || '').toLowerCase().includes(cf.species));
+  if (cf.treeField)      allRows = allRows.filter(r => (r.treeField      || '').toLowerCase().includes(cf.treeField));
+  if (cf.matchedFieldId) allRows = allRows.filter(r => (r.matchedFieldId || '').toLowerCase().includes(cf.matchedFieldId));
+  if (cf.submittedBy)    allRows = allRows.filter(r => (r.submittedBy    || '').toLowerCase().includes(cf.submittedBy));
+  if (cf.status)         allRows = allRows.filter(r => r.status === cf.status);
+  if (cf.fieldMatch === 'yes') allRows = allRows.filter(r => r.fieldMatch === true);
+  if (cf.fieldMatch === 'no')  allRows = allRows.filter(r => r.fieldMatch === false);
+  if (cf.fieldMatch === 'na')  allRows = allRows.filter(r => r.fieldMatch === null);
+  if (cf.ownerMatch === 'yes') allRows = allRows.filter(r => r.ownerMatch === true);
+  if (cf.ownerMatch === 'no')  allRows = allRows.filter(r => r.ownerMatch === false);
+  if (cf.ownerMatch === 'na')  allRows = allRows.filter(r => r.ownerMatch === null);
   // Cap display at 500 rows — full data available via CSV export
   const rows = allRows.slice(0, 500);
   const tbody = document.getElementById('excBody');
@@ -3861,7 +3977,13 @@ async function openTreeCatalog() {
 function clearAll() {
   fieldsData = []; treesData = []; allocation = []; filtered = []; searchIndex = [];
   excludedFieldIds = new Set(); suspectFieldStats = []; exceptionsBuilt = false;
-  selectedFieldId = null; excActiveFilter = null;
+  selectedFieldId = null; excActiveFilter = null; excColFilters = {};
+  // Clear column filter inputs
+  ['excF-treeCode','excF-species','excF-treeField','excF-matchedFieldId',
+   'excF-fieldMatch','excF-ownerMatch','excF-status','excF-submittedBy'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   ['statusFields','statusTrees'].forEach(id => {
     document.getElementById(id).textContent = '';
     document.getElementById(id).className = 'upload-status';
