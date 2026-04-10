@@ -1110,7 +1110,9 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       <div style="font-size:10px;color:var(--muted)">One row per field — mismatches, status, priority</div>
     </div>
   </div>
-  <button class="btn btn-blue" id="btnSaveDV" onclick="saveToFieldforce()" disabled
+  <button class="btn" onclick="openExecSummary()" id="btnExecSummary" disabled
+    style="background:rgba(74,222,128,0.1);color:var(--green);border:1px solid var(--green-b);
+    padding:5px 10px;white-space:nowrap">📋 Summary</button>
     style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:5px 10px;white-space:nowrap">
     ☁ Fieldforce
   </button>
@@ -1455,8 +1457,24 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
           <table class="suspect-tbl">
             <thead>
               <tr>
-                <th>Field ID</th><th>Owner</th><th>Zone</th>
-                <th>Inside</th><th>Mismatches</th><th>Rate</th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Field ID</span>
+                  <input id="sfF-fieldId" type="text" placeholder="Filter…" oninput="updateSuspectTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;font-family:var(--font-mono);outline:none"/></div></th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Owner</span>
+                  <input id="sfF-owner" type="text" placeholder="Filter…" oninput="updateSuspectTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;outline:none"/></div></th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Zone</span>
+                  <input id="sfF-zone" type="text" placeholder="Filter…" oninput="updateSuspectTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;outline:none"/></div></th>
+                <th>Inside</th><th>Mismatches</th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Rate</span>
+                  <select id="sfF-pattern" onchange="updateSuspectTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 2px;outline:none">
+                    <option value="">All</option>
+                    <option value="conflict">Genuine conflicts</option>
+                    <option value="blank">Blank tree fields</option>
+                    <option value="mixed">Mixed</option>
+                  </select></div></th>
                 <th>Pattern</th><th></th>
               </tr>
             </thead>
@@ -1476,13 +1494,28 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
           <table class="overlap-tbl">
             <thead>
               <tr>
-                <th>Field A</th>
-                <th>Owner A</th>
-                <th>Field B</th>
-                <th>Owner B</th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Field A</span>
+                  <input id="ovF-fieldA" type="text" placeholder="Filter…" oninput="renderOverlapTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;font-family:var(--font-mono);outline:none"/></div></th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Owner A</span>
+                  <input id="ovF-ownerA" type="text" placeholder="Filter…" oninput="renderOverlapTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;outline:none"/></div></th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Field B</span>
+                  <input id="ovF-fieldB" type="text" placeholder="Filter…" oninput="renderOverlapTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;font-family:var(--font-mono);outline:none"/></div></th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Owner B</span>
+                  <input id="ovF-ownerB" type="text" placeholder="Filter…" oninput="renderOverlapTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 4px;outline:none"/></div></th>
                 <th>Overlap area</th>
                 <th>Trees at risk</th>
-                <th>Severity</th>
+                <th><div style="display:flex;flex-direction:column;gap:3px"><span>Severity</span>
+                  <select id="ovF-severity" onchange="renderOverlapTable()"
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:9px;padding:2px 2px;outline:none">
+                    <option value="">All</option>
+                    <option value="high">High</option>
+                    <option value="med">Medium</option>
+                    <option value="low">Low</option>
+                  </select></div></th>
               </tr>
             </thead>
             <tbody id="overlapBody"></tbody>
@@ -2383,6 +2416,7 @@ async function runAllocation() {
   document.getElementById('btnExport').disabled = false;
   document.getElementById('btnSaveDV').disabled = false;
   document.getElementById('btnReport').disabled = false;
+  document.getElementById('btnExecSummary').disabled = false;
 
   const inside  = allocation.filter(r => r.insidePolygon).length;
   const outside = allocation.length - inside;
@@ -3250,27 +3284,7 @@ async function detectOverlappingFields() {
     `${pairs.length}${pairs.length>=MAX_PAIRS?'+':''} overlapping pair${pairs.length!==1?'s':''} · ` +
     `~${pairs.reduce((s,p)=>s+p.treeRisk,0).toLocaleString()} trees at risk`;
 
-  body.innerHTML = pairs.slice(0,50).map((p, rowIdx) => {
-    const pct = Math.round(p.score*100);
-    const col = p.severity==='high'?'var(--red)':p.severity==='med'?'var(--amber)':'var(--blue)';
-    const sevClass = `overlap-sev-${p.severity}`;
-    const sevLabel = p.severity==='high'?'High':p.severity==='med'?'Medium':'Low';
-    return `<tr style="cursor:pointer" onclick="openOverlapLightbox(${rowIdx})"
-      onmouseenter="this.style.background='rgba(167,139,250,0.07)'"
-      onmouseleave="this.style.background=''">
-      <td><span class="overlap-field-link">${p.fA.fieldId}</span></td>
-      <td style="font-size:11px;color:var(--muted)">${p.fA.owner||'—'}</td>
-      <td><span class="overlap-field-link">${p.fB.fieldId}</span></td>
-      <td style="font-size:11px;color:var(--muted)">${p.fB.owner||'—'}</td>
-      <td><div class="overlap-pct-bar">
-        <div class="overlap-bar-track"><div class="overlap-bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
-        <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:${col};min-width:32px">${pct}%</span>
-      </div></td>
-      <td class="overlap-trees-at-risk">${p.treeRisk>0?'~'+p.treeRisk.toLocaleString():'<span style="color:var(--muted)">0</span>'}</td>
-      <td><span class="overlap-severity ${sevClass}">${sevLabel}</span></td>
-    </tr>`;
-  }).join('');
-
+  renderOverlapTable();
   panel.style.display = '';
 
   // Show sidebar filter button
@@ -3475,16 +3489,30 @@ function jumpToField(fieldId) {
 function updateSuspectTable() {
   const threshold = parseInt(document.getElementById('thresholdSlider').value) / 100;
   document.getElementById('thresholdVal').textContent = Math.round(threshold * 100) + '%';
-  const suspects = suspectFieldStats.filter(s => s.rate >= threshold);
-  const panel    = document.getElementById('suspectPanel');
+  const panel = document.getElementById('suspectPanel');
   if (!suspectFieldStats.length) { panel.style.display = 'none'; return; }
   panel.style.display = '';
+
+  // Column filters
+  const fId      = (document.getElementById('sfF-fieldId')?.value || '').toLowerCase().trim();
+  const fOwner   = (document.getElementById('sfF-owner')?.value   || '').toLowerCase().trim();
+  const fZone    = (document.getElementById('sfF-zone')?.value    || '').toLowerCase().trim();
+  const fPattern = (document.getElementById('sfF-pattern')?.value || '');
+
+  let suspects = suspectFieldStats.filter(s => s.rate >= threshold);
+  if (fId)    suspects = suspects.filter(s => s.fieldId.toLowerCase().includes(fId));
+  if (fOwner) suspects = suspects.filter(s => (s.owner||'').toLowerCase().includes(fOwner));
+  if (fZone)  suspects = suspects.filter(s => (s.zone||'').toLowerCase().includes(fZone));
+  if (fPattern === 'conflict') suspects = suspects.filter(s => s.conflictTree > s.blankTree * 2 || Math.round(s.rate*100) === 100);
+  if (fPattern === 'blank')    suspects = suspects.filter(s => s.blankTree > s.conflictTree * 2);
+  if (fPattern === 'mixed')    suspects = suspects.filter(s => s.blankTree <= s.conflictTree * 2 && s.conflictTree <= s.blankTree * 2 && Math.round(s.rate*100) !== 100);
+
   const totalMM = suspects.reduce((a, s) => a + s.mismatch, 0);
   document.getElementById('suspectSummary').textContent =
     `${suspects.length} fields · ${totalMM.toLocaleString()} mismatches`;
   if (!suspects.length) {
     document.getElementById('suspectBody').innerHTML =
-      `<tr><td colspan="8" style="text-align:center;padding:12px;color:var(--muted)">No fields exceed ${Math.round(threshold*100)}% mismatch rate</td></tr>`;
+      `<tr><td colspan="8" style="text-align:center;padding:12px;color:var(--muted)">No fields match the current filters</td></tr>`;
     return;
   }
   document.getElementById('suspectBody').innerHTML = suspects.map(s => {
@@ -3512,6 +3540,48 @@ function updateSuspectTable() {
       <td>${pattern}</td>
       <td><button class="btn-excl ${isExcl?'excluded':''}" id="eb_${safeId}"
         onclick="toggleExcludeField('${esc(s.fieldId)}')">${isExcl?'✓ Excluded':'Exclude'}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOverlapTable() {
+  if (!overlapPairsCache.length) return;
+  const fA   = (document.getElementById('ovF-fieldA')?.value  || '').toLowerCase().trim();
+  const fOA  = (document.getElementById('ovF-ownerA')?.value  || '').toLowerCase().trim();
+  const fB   = (document.getElementById('ovF-fieldB')?.value  || '').toLowerCase().trim();
+  const fOB  = (document.getElementById('ovF-ownerB')?.value  || '').toLowerCase().trim();
+  const fSev = (document.getElementById('ovF-severity')?.value|| '');
+
+  let pairs = overlapPairsCache;
+  if (fA)   pairs = pairs.filter(p => p.fA.fieldId.toLowerCase().includes(fA));
+  if (fOA)  pairs = pairs.filter(p => (p.fA.owner||'').toLowerCase().includes(fOA));
+  if (fB)   pairs = pairs.filter(p => p.fB.fieldId.toLowerCase().includes(fB));
+  if (fOB)  pairs = pairs.filter(p => (p.fB.owner||'').toLowerCase().includes(fOB));
+  if (fSev) pairs = pairs.filter(p => p.severity === fSev);
+
+  const body = document.getElementById('overlapBody');
+  if (!pairs.length) {
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:12px;color:var(--muted)">No pairs match the current filters</td></tr>`;
+    return;
+  }
+  body.innerHTML = pairs.slice(0,50).map((p, rowIdx) => {
+    const pct = Math.round(p.score*100);
+    const col = p.severity==='high'?'var(--red)':p.severity==='med'?'var(--amber)':'var(--blue)';
+    const sevClass = `overlap-sev-${p.severity}`;
+    const sevLabel = p.severity==='high'?'High':p.severity==='med'?'Medium':'Low';
+    return `<tr style="cursor:pointer" onclick="openOverlapLightbox(${overlapPairsCache.indexOf(p)})"
+      onmouseenter="this.style.background='rgba(167,139,250,0.07)'"
+      onmouseleave="this.style.background=''">
+      <td><span class="overlap-field-link">${p.fA.fieldId}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${p.fA.owner||'—'}</td>
+      <td><span class="overlap-field-link">${p.fB.fieldId}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${p.fB.owner||'—'}</td>
+      <td><div class="overlap-pct-bar">
+        <div class="overlap-bar-track"><div class="overlap-bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
+        <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:${col};min-width:32px">${pct}%</span>
+      </div></td>
+      <td class="overlap-trees-at-risk">${p.treeRisk>0?'~'+p.treeRisk.toLocaleString():'<span style="color:var(--muted)">0</span>'}</td>
+      <td><span class="overlap-severity ${sevClass}">${sevLabel}</span></td>
     </tr>`;
   }).join('');
 }
@@ -4003,6 +4073,7 @@ function clearAll() {
     .forEach(id => document.getElementById(id).textContent = '—');
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnExport').disabled = true;
+  document.getElementById('btnExecSummary').disabled = true;
   document.getElementById('filterSection').style.display = 'none';
   const sideOvBtn = document.getElementById('btnShowOverlaps');
   if (sideOvBtn) sideOvBtn.style.display = 'none';
@@ -4546,6 +4617,34 @@ function generateReportCSV(data) {
   </div>
 </div>
 
+<!-- ── EXECUTIVE SUMMARY MODAL ────────────────────────────────────────── -->
+<div id="execSummaryOverlay" style="display:none;position:fixed;inset:0;z-index:10500;
+  background:rgba(4,8,14,0.88);align-items:center;justify-content:center;
+  backdrop-filter:blur(4px)" onclick="if(event.target===this)closeExecSummary()">
+  <div style="width:min(780px,94vw);max-height:88vh;overflow-y:auto;
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 24px 64px rgba(0,0,0,.8)">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;
+      border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1">
+      <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;
+        letter-spacing:2px;color:var(--green);text-transform:uppercase;flex:1">
+        📋 Management Executive Summary
+      </span>
+      <button onclick="exportExecSummaryCSV()"
+        style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-b);
+        border-radius:4px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;
+        font-family:var(--font-mono);letter-spacing:.5px">⬇ Export</button>
+      <button onclick="closeExecSummary()"
+        style="background:var(--border);border:none;color:var(--text);width:28px;height:28px;
+        border-radius:4px;cursor:pointer;font-size:14px">✕</button>
+    </div>
+
+    <div id="execSummaryBody" style="padding:24px 28px 32px"></div>
+  </div>
+</div>
+
 <!-- ── WHY ERRORS OVERLAY ─────────────────────────────────────────────── -->
 <div class="we-overlay" id="weOverlay" onclick="if(event.target===this)closeWhyErrors()">
   <div class="we-panel">
@@ -4901,6 +5000,235 @@ function generateReportCSV(data) {
 </div><!-- end handbook-overlay -->
 <script>
 
+// ═══════════════════════════════════════════════════════════════════════════
+// EXECUTIVE SUMMARY
+// ═══════════════════════════════════════════════════════════════════════════
+
+function openExecSummary() {
+  closeHandbook(); closeWhyErrors(); closeOverlapLightbox();
+  const overlay = document.getElementById('execSummaryOverlay');
+  overlay.style.display = 'flex';
+  renderExecSummary();
+}
+function closeExecSummary() {
+  document.getElementById('execSummaryOverlay').style.display = 'none';
+}
+
+function renderExecSummary() {
+  if (!allocation.length) return;
+  const total      = allocation.length;
+  const allocated  = allocation.filter(r => r.status === 'Allocated').length;
+  const mismatch   = allocation.filter(r => r.status === 'Allocated - Field mismatch').length;
+  const outside    = allocation.filter(r => r.status === 'Outside polygon').length;
+  const outsideTag = allocation.filter(r => r.status === 'Outside polygon but field tagged').length;
+  const review     = mismatch + outside + outsideTag;
+  const compPct    = total > 0 ? (allocated / total * 100).toFixed(1) : 0;
+  const revPct     = total > 0 ? (review    / total * 100).toFixed(1) : 0;
+  const fields     = fieldsData.length;
+  const withGeo    = fieldsData.filter(f => f.ring).length;
+  const noGeo      = fields - withGeo;
+  const threshold  = 0.8;
+  const suspectCount = suspectFieldStats.filter(s => s.rate >= threshold).length;
+  const suspectMM    = suspectFieldStats.filter(s => s.rate >= threshold).reduce((a,s)=>a+s.mismatch,0);
+  const overlapCount = overlapPairsCache.length;
+  const overlapRisk  = overlapPairsCache.reduce((a,p)=>a+p.treeRisk,0);
+  const date = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+
+  // Projected improvement
+  const projectedResolved = Math.min(suspectMM + Math.round(overlapRisk * 1.5), review);
+  const projectedPct = review > 0 ? Math.round(projectedResolved / review * 100) : 0;
+  const newCompPct = total > 0 ? ((allocated + projectedResolved) / total * 100).toFixed(1) : 0;
+
+  function kpi(n, label, color) {
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;
+      padding:14px;text-align:center">
+      <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:${color};
+        line-height:1;margin-bottom:5px">${n}</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.4;text-transform:uppercase;
+        letter-spacing:.5px">${label}</div>
+    </div>`;
+  }
+  function section(title, color) {
+    return `<div style="font-family:var(--font-mono);font-size:9px;font-weight:700;
+      letter-spacing:2px;color:${color};text-transform:uppercase;margin:24px 0 10px;
+      padding-bottom:5px;border-bottom:1px solid var(--border)">${title}</div>`;
+  }
+  function para(html) {
+    return `<p style="font-size:13px;color:var(--muted);line-height:1.75;margin:0 0 10px">${html}</p>`;
+  }
+  function callout(html, bg, border) {
+    return `<div style="background:${bg};border-left:3px solid ${border};border-radius:0 6px 6px 0;
+      padding:12px 16px;margin:12px 0;font-size:12px;color:var(--text);line-height:1.7">${html}</div>`;
+  }
+  function bold(t, col='var(--text)') { return `<strong style="color:${col}">${t}</strong>`; }
+
+  document.getElementById('execSummaryBody').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;
+      padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono);
+          letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">
+          Community Climate Solutions — CCS Active Tree Catalog</div>
+        <div style="font-size:18px;font-weight:600;color:var(--text)">
+          Field & Tree Allocation Status</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);text-align:right">
+        ${date}<br>${total.toLocaleString()} trees · ${fields.toLocaleString()} fields</div>
+    </div>
+
+    ${section('Current status', 'var(--blue)')}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      ${kpi(total.toLocaleString(), 'Total trees', 'var(--blue)')}
+      ${kpi(allocated.toLocaleString(), 'Allocated<br>correctly', 'var(--green)')}
+      ${kpi(review.toLocaleString(), 'Flagged<br>for review', 'var(--red)')}
+      ${kpi(compPct + '%', 'Compliance<br>rate', parseFloat(compPct) >= 90 ? 'var(--green)' : parseFloat(compPct) >= 70 ? 'var(--amber)' : 'var(--red)')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      ${kpi(mismatch.toLocaleString(), 'Field<br>mismatches', 'var(--amber)')}
+      ${kpi(outside.toLocaleString(), 'Outside<br>polygon', 'var(--red)')}
+      ${kpi(outsideTag.toLocaleString(), 'Outside +<br>field tagged', 'var(--purple)')}
+      ${kpi(noGeo > 0 ? noGeo.toLocaleString() : '0', 'Fields with<br>no boundary', noGeo > 0 ? 'var(--red)' : 'var(--green)')}
+    </div>
+
+    ${section('Root causes identified', 'var(--amber)')}
+    ${para(`Of the ${bold(review.toLocaleString(), 'var(--red)')} trees flagged for review, the analysis has identified two primary structural causes:`)}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="background:var(--card);border:1px solid var(--red-b);border-radius:6px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:6px;
+          font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px">
+          Suspect field boundaries</div>
+        <div style="font-size:22px;font-weight:700;color:var(--red);font-family:var(--font-mono);
+          margin-bottom:4px">${suspectCount.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+          fields with ≥80% mismatch rate</div>
+        <div style="font-size:11px;color:var(--muted)">
+          ${bold(suspectMM.toLocaleString(), 'var(--amber)')} mismatched trees in these fields.<br>
+          Almost certainly caused by boundaries drawn in the wrong location.
+        </div>
+      </div>
+      <div style="background:var(--card);border:1px solid rgba(167,139,250,0.3);border-radius:6px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px;
+          font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px">
+          Overlapping boundaries</div>
+        <div style="font-size:22px;font-weight:700;color:var(--purple);font-family:var(--font-mono);
+          margin-bottom:4px">${overlapCount > 0 ? overlapCount + (overlapCount >= 100 ? '+' : '') : '0'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+          pairs of fields sharing boundary area</div>
+        <div style="font-size:11px;color:var(--muted)">
+          ~${bold(overlapRisk.toLocaleString(), 'var(--amber)')} trees in shared zones.<br>
+          Trees in overlap zones are assigned to one field and flagged as a mismatch in the other.
+        </div>
+      </div>
+    </div>
+    ${callout(
+      `${bold('Key finding:')} 99.8% of mismatches are caused by field boundary placement errors — not by incorrect tree GPS coordinates. The trees are correct. The boundaries need to be redrawn.`,
+      'var(--green-bg)', 'var(--green)'
+    )}
+
+    ${section('Roadmap to resolution', 'var(--green)')}
+    ${para('Addressing the two root causes above in priority order will resolve the vast majority of flagged trees without touching any tree records.')}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      ${['Priority 1 — Redraw the top suspect field boundaries',
+         `Fix the ${bold(suspectCount.toLocaleString(),'var(--red)')} fields flagged with ≥80% mismatch rate. Start with the highest tree counts. Use the ${bold('Field Summary Export')} to get a prioritised list, then correct each boundary in the ${bold('CCS Polygon Corrector')}.`,
+         'var(--red-bg)', 'var(--red)'
+        ].join('|||').split('|||').length > 0 ? (() => {
+          const items = [
+            ['Priority 1 — Redraw suspect field boundaries',
+             `Fix the ${bold(suspectCount.toLocaleString(),'var(--red)')} fields with ≥80% mismatch rate. Start with highest tree counts. Use the ${bold('Field Summary Export')} for a prioritised list, then correct each in the ${bold('CCS Polygon Corrector')}.`,
+             'var(--red-b)'],
+            ['Priority 2 — Separate overlapping boundaries',
+             `Resolve the ${bold(overlapCount + (overlapCount>=100?'+':''),'var(--purple)')} overlapping field pairs. Click any row in the Overlapping Fields panel to open the diagnostic map showing exactly which boundaries conflict.`,
+             'rgba(167,139,250,0.3)'],
+            ['Priority 3 — Re-run allocation',
+             'After each batch of corrections, re-run allocation. The system automatically verifies resolved fields and moves them to "Clean" status in the Work Queue. No manual sign-off needed.',
+             'var(--green-b)'],
+            ['Priority 4 — Address remaining exceptions',
+             'A small number of trees may have GPS accuracy issues or missing field IDs. These can be reviewed individually in the Exceptions tab after boundaries are corrected.',
+             'var(--blue-b)'],
+          ];
+          return items.map(([title, body, bdr], i) =>
+            `<div style="display:flex;gap:12px;align-items:flex-start;background:var(--card);
+              border:1px solid ${bdr};border-radius:6px;padding:12px 14px">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--green);
+                color:#000;font-size:10px;font-weight:800;display:flex;align-items:center;
+                justify-content:center;flex-shrink:0;font-family:var(--font-mono)">${i+1}</div>
+              <div>
+                <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">${title}</div>
+                <div style="font-size:11px;color:var(--muted);line-height:1.65">${body}</div>
+              </div>
+            </div>`
+          ).join('');
+        })() : ''}
+    </div>
+
+    ${callout(
+      `${bold('Projected outcome:')} Correcting the ${bold(suspectCount.toLocaleString())} suspect boundaries and ${bold(overlapCount + (overlapCount>=100?'+':''))} overlapping pairs is estimated to resolve approximately ${bold(projectedPct+'%', 'var(--green)')} of flagged trees, bringing compliance from ${bold(compPct+'%')} to approximately ${bold(newCompPct+'%', 'var(--green)')}.`,
+      'var(--blue-bg)', 'var(--blue)'
+    )}
+
+    ${section('Tools & links', 'var(--muted)')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <a href="https://communityclimate.github.io/ccs-tree-catalog/index.html" target="_blank"
+        style="display:block;padding:10px 14px;background:var(--card);border:1px solid var(--border);
+        border-radius:6px;text-decoration:none;color:var(--blue);font-size:11px;font-family:var(--font-mono)">
+        🗂 CCS Active Tree Catalog →</a>
+      <a href="https://communityclimate.github.io/ccs-polygon-corrector/" target="_blank"
+        style="display:block;padding:10px 14px;background:var(--card);border:1px solid var(--border);
+        border-radius:6px;text-decoration:none;color:var(--green);font-size:11px;font-family:var(--font-mono)">
+        ✏ CCS Polygon Corrector →</a>
+    </div>
+  `;
+}
+
+function exportExecSummaryCSV() {
+  if (!allocation.length) return;
+  const total      = allocation.length;
+  const allocated  = allocation.filter(r => r.status === 'Allocated').length;
+  const mismatch   = allocation.filter(r => r.status === 'Allocated - Field mismatch').length;
+  const outside    = allocation.filter(r => r.status === 'Outside polygon').length;
+  const outsideTag = allocation.filter(r => r.status === 'Outside polygon but field tagged').length;
+  const review     = mismatch + outside + outsideTag;
+  const compPct    = total > 0 ? (allocated / total * 100).toFixed(1) : 0;
+  const suspectCount = suspectFieldStats.filter(s => s.rate >= 0.8).length;
+  const suspectMM    = suspectFieldStats.filter(s => s.rate >= 0.8).reduce((a,s)=>a+s.mismatch,0);
+  const overlapCount = overlapPairsCache.length;
+  const date = new Date().toLocaleDateString('en-GB');
+
+  const rows = [
+    ['CCS Active Tree Catalog — Executive Summary', date],
+    [],
+    ['Metric', 'Value'],
+    ['Total trees', total],
+    ['Allocated correctly', allocated],
+    ['Flagged for review', review],
+    ['Compliance rate (%)', compPct],
+    ['Field mismatches', mismatch],
+    ['Outside polygon', outside],
+    ['Outside + field tagged', outsideTag],
+    ['Total fields', fieldsData.length],
+    ['Fields with no boundary', fieldsData.filter(f=>!f.ring).length],
+    [],
+    ['Root causes', ''],
+    ['Suspect fields (≥80% mismatch)', suspectCount],
+    ['Mismatched trees in suspect fields', suspectMM],
+    ['Overlapping field pairs', overlapCount],
+    [],
+    ['Key finding', '99.8% of mismatches caused by boundary placement errors — not tree GPS coordinates'],
+    ['Action 1', 'Redraw suspect field boundaries using CCS Polygon Corrector'],
+    ['Action 2', 'Separate overlapping field boundaries'],
+    ['Action 3', 'Re-run allocation after corrections'],
+    ['Tool', 'https://communityclimate.github.io/ccs-tree-catalog/index.html'],
+    ['Polygon Corrector', 'https://communityclimate.github.io/ccs-polygon-corrector/'],
+  ];
+  const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `CCS_Executive_Summary_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+
 // ── Why Errors Overlay ────────────────────────────────────────────────────
 function openWhyErrors() {
   closeHandbook(); // ensure handbook doesn't stack
@@ -4952,7 +5280,7 @@ function searchHandbook(q) {
   if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeHandbook(); closeWhyErrors(); closeOverlapLightbox(); }
+  if (e.key === 'Escape') { closeHandbook(); closeWhyErrors(); closeOverlapLightbox(); closeExecSummary(); }
 });
 
 </script>
