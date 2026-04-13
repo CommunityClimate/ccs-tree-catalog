@@ -3399,11 +3399,11 @@ function openOverlapLightbox(idx) {
   // ── Actions ──────────────────────────────────────────────────────────────
   const correctorBase = 'https://communityclimate.github.io/ccs-polygon-corrector/';
   document.getElementById('ovlbActions').innerHTML = `
-    <a class="ovlb-act-btn" href="${correctorBase}" target="_blank"
+    <a class="ovlb-act-btn" href="${correctorBase}?fieldId=${encodeURIComponent(fA.fieldId)}" target="_blank"
       style="background:var(--green-bg);color:var(--green);border-color:var(--green-b)">
       ✏ Fix Field A in Polygon Corrector →
     </a>
-    <a class="ovlb-act-btn" href="${correctorBase}" target="_blank"
+    <a class="ovlb-act-btn" href="${correctorBase}?fieldId=${encodeURIComponent(fB.fieldId)}" target="_blank"
       style="background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b)">
       ✏ Fix Field B in Polygon Corrector →
     </a>
