@@ -1092,7 +1092,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
   <!-- Export menu rendered outside header to avoid overflow:hidden clipping -->
   <div id="exportMenu" style="display:none;position:fixed;margin-top:4px;
     background:var(--panel);border:1px solid var(--border);border-radius:6px;
-    min-width:220px;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden">
+    min-width:240px;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden">
     <div onclick="exportCSV();closeExportMenu()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
       font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
@@ -1103,11 +1103,19 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     </div>
     <div onclick="exportFieldCSV();closeExportMenu()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
-      font-family:var(--font-sans);transition:background .12s"
+      font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
       onmouseenter="this.style.background='var(--card)'"
       onmouseleave="this.style.background=''">
       <div style="font-weight:700;margin-bottom:2px">⬇ Field Summary Export</div>
       <div style="font-size:10px;color:var(--muted)">One row per field — mismatches, status, priority</div>
+    </div>
+    <div onclick="exportOverlapCSV();closeExportMenu()"
+      style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
+      font-family:var(--font-sans);transition:background .12s"
+      onmouseenter="this.style.background='var(--card)'"
+      onmouseleave="this.style.background=''">
+      <div style="font-weight:700;margin-bottom:2px">⬇ Overlapping Fields Export</div>
+      <div style="font-size:10px;color:var(--muted)">One row per overlapping pair — severity, trees at risk</div>
     </div>
   </div>
   <button class="btn" onclick="openExecSummary()" id="btnExecSummary" disabled
@@ -5179,6 +5187,106 @@ function renderExecSummary() {
         ✏ CCS Polygon Corrector →</a>
     </div>
   `;
+}
+
+function exportOverlapCSV() {
+  if (!overlapPairsCache.length) {
+    alert('No overlapping fields detected yet. Run allocation first, then wait for overlap detection to complete.');
+    return;
+  }
+
+  const header = [
+    'Field A ID',
+    'Field A Owner',
+    'Field A Centroid Lat',
+    'Field A Centroid Lng',
+    'Field A Total Trees',
+    'Field A Mismatches',
+    'Field A Mismatch Rate (%)',
+    'Field B ID',
+    'Field B Owner',
+    'Field B Centroid Lat',
+    'Field B Centroid Lng',
+    'Field B Total Trees',
+    'Field B Mismatches',
+    'Field B Mismatch Rate (%)',
+    'Overlap Area (%)',
+    'Trees at Risk (approx)',
+    'Severity',
+    'Action Required',
+  ];
+
+  // Build field stats lookup from allocation
+  const fieldStats = {};
+  allocation.forEach(r => {
+    if (!r.matchedFieldId) return;
+    if (!fieldStats[r.matchedFieldId]) fieldStats[r.matchedFieldId] = { total:0, mismatch:0 };
+    fieldStats[r.matchedFieldId].total++;
+    if (r.status && r.status.includes('mismatch')) fieldStats[r.matchedFieldId].mismatch++;
+  });
+
+  // Centroid lookup from fieldsData
+  const centroids = {};
+  fieldsData.forEach(f => {
+    if (!f.ring) return;
+    centroids[f.fieldId] = {
+      lat: (f.ring.reduce((s,c)=>s+c[1],0)/f.ring.length).toFixed(6),
+      lng: (f.ring.reduce((s,c)=>s+c[0],0)/f.ring.length).toFixed(6),
+    };
+  });
+
+  function action(severity) {
+    if (severity === 'high')   return 'Urgent — separate boundaries immediately, redraw in Polygon Corrector';
+    if (severity === 'med')    return 'Review — boundaries share significant area, separate to resolve mismatches';
+    return 'Monitor — minor overlap, investigate if mismatch rate is elevated';
+  }
+
+  const rows = overlapPairsCache.map(p => {
+    const sA = fieldStats[p.fA.fieldId] || { total:0, mismatch:0 };
+    const sB = fieldStats[p.fB.fieldId] || { total:0, mismatch:0 };
+    const mmA = sA.total > 0 ? (sA.mismatch/sA.total*100).toFixed(1) : '0.0';
+    const mmB = sB.total > 0 ? (sB.mismatch/sB.total*100).toFixed(1) : '0.0';
+    const cA = centroids[p.fA.fieldId] || { lat:'', lng:'' };
+    const cB = centroids[p.fB.fieldId] || { lat:'', lng:'' };
+    return [
+      p.fA.fieldId,
+      p.fA.owner || '',
+      cA.lat, cA.lng,
+      sA.total,
+      sA.mismatch,
+      mmA,
+      p.fB.fieldId,
+      p.fB.owner || '',
+      cB.lat, cB.lng,
+      sB.total,
+      sB.mismatch,
+      mmB,
+      Math.round(p.score * 100),
+      p.treeRisk > 0 ? '~' + p.treeRisk.toLocaleString() : '0',
+      p.severity.charAt(0).toUpperCase() + p.severity.slice(1),
+      action(p.severity),
+    ];
+  });
+
+  // Sort: high severity first, then by overlap % descending
+  rows.sort((a,b) => {
+    const sevOrder = { High:0, Medium:1, Low:2 };
+    const diff = (sevOrder[a[16]]||2) - (sevOrder[b[16]]||2);
+    return diff !== 0 ? diff : parseFloat(b[14]) - parseFloat(a[14]);
+  });
+
+  const csvRows = [header, ...rows];
+  const csv = csvRows.map(r =>
+    r.map(v => `"${String(v===null||v===undefined?'':v).replace(/"/g,'""')}"`).join(',')
+  ).join('\n');
+
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `CCS_Overlapping_Fields_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
 }
 
 function exportExecSummaryCSV() {
