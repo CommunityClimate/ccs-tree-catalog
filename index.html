@@ -1111,11 +1111,19 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     </div>
     <div onclick="exportOverlapCSV();closeExportMenu()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
-      font-family:var(--font-sans);transition:background .12s"
+      font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
       onmouseenter="this.style.background='var(--card)'"
       onmouseleave="this.style.background=''">
       <div style="font-weight:700;margin-bottom:2px">⬇ Overlapping Fields Export</div>
       <div style="font-size:10px;color:var(--muted)">One row per overlapping pair — severity, trees at risk</div>
+    </div>
+    <div onclick="exportLargePolygonsCSV();closeExportMenu()"
+      style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
+      font-family:var(--font-sans);transition:background .12s"
+      onmouseenter="this.style.background='var(--card)'"
+      onmouseleave="this.style.background=''">
+      <div style="font-weight:700;margin-bottom:2px">⬇ Large Polygons Export</div>
+      <div style="font-size:10px;color:var(--muted)">Fields unusually large — possible boundary errors</div>
     </div>
   </div>
   <button class="btn" onclick="openExecSummary()" id="btnExecSummary" disabled
@@ -5290,6 +5298,158 @@ function exportOverlapCSV() {
 }
 
 function exportExecSummaryCSV() {
+  if (!allocation.length) return;
+  const total      = allocation.length;
+  const allocated  = allocation.filter(r => r.status === 'Allocated').length;
+  const mismatch   = allocation.filter(r => r.status === 'Allocated - Field mismatch').length;
+  const outside    = allocation.filter(r => r.status === 'Outside polygon').length;
+  const outsideTag = allocation.filter(r => r.status === 'Outside polygon but field tagged').length;
+  const review     = mismatch + outside + outsideTag;
+  const compPct    = total > 0 ? (allocated / total * 100).toFixed(1) : 0;
+  const suspectCount = suspectFieldStats.filter(s => s.rate >= 0.8).length;
+  const suspectMM    = suspectFieldStats.filter(s => s.rate >= 0.8).reduce((a,s)=>a+s.mismatch,0);
+  const overlapCount = overlapPairsCache.length;
+  const date = new Date().toLocaleDateString('en-GB');
+  const rows = [
+    ['CCS Active Tree Catalog — Executive Summary', date],
+    [],
+    ['Metric', 'Value'],
+    ['Total trees', total],
+    ['Allocated correctly', allocated],
+    ['Flagged for review', review],
+    ['Compliance rate (%)', compPct],
+    ['Field mismatches', mismatch],
+    ['Outside polygon', outside],
+    ['Outside + field tagged', outsideTag],
+    ['Total fields', fieldsData.length],
+    ['Fields with no boundary', fieldsData.filter(f=>!f.ring).length],
+    [],
+    ['Root causes', ''],
+    ['Suspect fields (≥80% mismatch)', suspectCount],
+    ['Mismatched trees in suspect fields', suspectMM],
+    ['Overlapping field pairs', overlapCount],
+    [],
+    ['Key finding', '99.8% of mismatches caused by boundary placement errors — not tree GPS coordinates'],
+    ['Action 1', 'Redraw suspect field boundaries using CCS Polygon Corrector'],
+    ['Action 2', 'Separate overlapping field boundaries'],
+    ['Action 3', 'Re-run allocation after corrections'],
+    ['Tool', 'https://communityclimate.github.io/ccs-tree-catalog/index.html'],
+    ['Polygon Corrector', 'https://communityclimate.github.io/ccs-polygon-corrector/'],
+  ];
+  const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `CCS_Executive_Summary_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+
+function exportLargePolygonsCSV() {
+  if (!fieldsData.length) {
+    alert('No field data loaded. Connect to Fieldforce and run allocation first.');
+    return;
+  }
+
+  // ── Calculate polygon area in hectares using spherical shoelace ──────────
+  function ringAreaHa(ring) {
+    if (!ring || ring.length < 3) return 0;
+    // Shoelace on geographic coordinates → approximate area in m²
+    // Uses the standard planar approximation at the centroid latitude
+    const n = ring.length;
+    let area = 0;
+    const R = 6378137; // Earth radius metres
+    const cLat = ring.reduce((s, c) => s + c[1], 0) / n * Math.PI / 180;
+    const mPerDegLat = Math.PI * R / 180;
+    const mPerDegLng = mPerDegLat * Math.cos(cLat);
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = ring[i][0] * mPerDegLng;
+      const yi = ring[i][1] * mPerDegLat;
+      const xj = ring[j][0] * mPerDegLng;
+      const yj = ring[j][1] * mPerDegLat;
+      area += (xj + xi) * (yj - yi);
+    }
+    return Math.abs(area / 2) / 10000; // m² → hectares
+  }
+
+  // ── Build per-field stats from allocation ────────────────────────────────
+  const byField = {};
+  allocation.forEach(r => {
+    if (!r.matchedFieldId) return;
+    if (!byField[r.matchedFieldId]) byField[r.matchedFieldId] = { total:0, mismatch:0 };
+    byField[r.matchedFieldId].total++;
+    if (r.status && r.status.includes('mismatch')) byField[r.matchedFieldId].mismatch++;
+  });
+
+  // ── Calculate area for every field with a ring ───────────────────────────
+  const results = fieldsData
+    .filter(f => f.ring && f.ring.length >= 3)
+    .map(f => {
+      const areaHa    = ringAreaHa(f.ring);
+      const storedM2  = f.size || 0;
+      const storedHa  = storedM2 / 10000;
+      // Flag as large if calculated area > 10 ha (typical planted field is 0.5–5 ha)
+      // or if stored size > 10 ha, or if calculated > 3× the stored size (possible corrupt polygon)
+      const isLarge   = areaHa > 10;
+      const isCorrupt = storedHa > 0 && areaHa > storedHa * 3;
+      const stats     = byField[f.fieldId] || { total:0, mismatch:0 };
+      const mmRate    = stats.total > 0 ? (stats.mismatch / stats.total * 100).toFixed(1) : '0.0';
+      let flag = '';
+      if (isCorrupt) flag = 'Suspect — calculated area is 3× larger than stored size. Possible corrupt polygon.';
+      else if (isLarge) flag = 'Large polygon — review boundary in Polygon Corrector.';
+      return { f, areaHa, storedHa, stats, mmRate, flag, isLarge, isCorrupt };
+    })
+    .filter(r => r.isLarge || r.isCorrupt)
+    .sort((a, b) => b.areaHa - a.areaHa);
+
+  if (!results.length) {
+    alert('No unusually large polygons found (threshold: >10 ha). All field boundaries appear within normal range.');
+    return;
+  }
+
+  const header = [
+    'Field ID',
+    'Field Owner',
+    'Zone',
+    'Calculated Area (ha)',
+    'Stored Size (ha)',
+    'Vertices',
+    'Centroid Latitude',
+    'Centroid Longitude',
+    'Total Trees',
+    'Mismatches',
+    'Mismatch Rate (%)',
+    'Flag',
+  ];
+
+  const rows = results.map(({ f, areaHa, storedHa, stats, mmRate, flag }) => [
+    f.fieldId,
+    f.owner || '',
+    f.zone  || '',
+    areaHa.toFixed(2),
+    storedHa > 0 ? storedHa.toFixed(2) : '',
+    f.ring.length,
+    f.ring ? (f.ring.reduce((s,c) => s + c[1], 0) / f.ring.length).toFixed(6) : '',
+    f.ring ? (f.ring.reduce((s,c) => s + c[0], 0) / f.ring.length).toFixed(6) : '',
+    stats.total,
+    stats.mismatch,
+    mmRate,
+    flag,
+  ]);
+
+  const csvRows = [header, ...rows];
+  const csv = csvRows.map(r =>
+    r.map(v => `"${String(v === null || v === undefined ? '' : v).replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `CCS_Large_Polygons_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
   if (!allocation.length) return;
   const total      = allocation.length;
   const allocated  = allocation.filter(r => r.status === 'Allocated').length;
