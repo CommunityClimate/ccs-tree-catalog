@@ -1093,7 +1093,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
   <div id="exportMenu" style="display:none;position:fixed;margin-top:4px;
     background:var(--panel);border:1px solid var(--border);border-radius:6px;
     min-width:240px;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5);overflow:hidden">
-    <div onclick="exportCSV();closeExportMenu()"
+    <div onclick="closeExportMenu();exportCSV()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
       font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
       onmouseenter="this.style.background='var(--card)'"
@@ -1101,7 +1101,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       <div style="font-weight:700;margin-bottom:2px">⬇ Tree Export</div>
       <div style="font-size:10px;color:var(--muted)">One row per tree — GPS, status, allocation result</div>
     </div>
-    <div onclick="exportFieldCSV();closeExportMenu()"
+    <div onclick="closeExportMenu();exportFieldCSV()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
       font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
       onmouseenter="this.style.background='var(--card)'"
@@ -1109,7 +1109,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       <div style="font-weight:700;margin-bottom:2px">⬇ Field Summary Export</div>
       <div style="font-size:10px;color:var(--muted)">One row per field — mismatches, status, priority</div>
     </div>
-    <div onclick="exportOverlapCSV();closeExportMenu()"
+    <div onclick="closeExportMenu();exportOverlapCSV()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
       font-family:var(--font-sans);border-bottom:1px solid var(--border);transition:background .12s"
       onmouseenter="this.style.background='var(--card)'"
@@ -1117,7 +1117,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
       <div style="font-weight:700;margin-bottom:2px">⬇ Overlapping Fields Export</div>
       <div style="font-size:10px;color:var(--muted)">One row per overlapping pair — severity, trees at risk</div>
     </div>
-    <div onclick="exportLargePolygonsCSV();closeExportMenu()"
+    <div onclick="closeExportMenu();exportLargePolygonsCSV()"
       style="padding:10px 16px;font-size:11px;cursor:pointer;color:var(--text);
       font-family:var(--font-sans);transition:background .12s"
       onmouseenter="this.style.background='var(--card)'"
@@ -5255,6 +5255,7 @@ function renderExecSummary() {
 }
 
 function exportOverlapCSV() {
+  setTimeout(() => {
   if (!overlapPairsCache.length) {
     alert('No overlapping fields detected yet. Run allocation first, then wait for overlap detection to complete.');
     return;
@@ -5352,57 +5353,11 @@ function exportOverlapCSV() {
   a.download = `CCS_Overlapping_Fields_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
-}
-
-function exportExecSummaryCSV() {
-  if (!allocation.length) return;
-  const total      = allocation.length;
-  const allocated  = allocation.filter(r => r.status === 'Allocated').length;
-  const mismatch   = allocation.filter(r => r.status === 'Allocated - Field mismatch').length;
-  const outside    = allocation.filter(r => r.status === 'Outside polygon').length;
-  const outsideTag = allocation.filter(r => r.status === 'Outside polygon but field tagged').length;
-  const review     = mismatch + outside + outsideTag;
-  const compPct    = total > 0 ? (allocated / total * 100).toFixed(1) : 0;
-  const suspectCount = suspectFieldStats.filter(s => s.rate >= 0.8).length;
-  const suspectMM    = suspectFieldStats.filter(s => s.rate >= 0.8).reduce((a,s)=>a+s.mismatch,0);
-  const overlapCount = overlapPairsCache.length;
-  const date = new Date().toLocaleDateString('en-GB');
-  const rows = [
-    ['CCS Active Tree Catalog — Executive Summary', date],
-    [],
-    ['Metric', 'Value'],
-    ['Total trees', total],
-    ['Allocated correctly', allocated],
-    ['Flagged for review', review],
-    ['Compliance rate (%)', compPct],
-    ['Field mismatches', mismatch],
-    ['Outside polygon', outside],
-    ['Outside + field tagged', outsideTag],
-    ['Total fields', fieldsData.length],
-    ['Fields with no boundary', fieldsData.filter(f=>!f.ring).length],
-    [],
-    ['Root causes', ''],
-    ['Suspect fields (≥80% mismatch)', suspectCount],
-    ['Mismatched trees in suspect fields', suspectMM],
-    ['Overlapping field pairs', overlapCount],
-    [],
-    ['Key finding', '99.8% of mismatches caused by boundary placement errors — not tree GPS coordinates'],
-    ['Action 1', 'Redraw suspect field boundaries using CCS Polygon Corrector'],
-    ['Action 2', 'Separate overlapping field boundaries'],
-    ['Action 3', 'Re-run allocation after corrections'],
-    ['Tool', 'https://communityclimate.github.io/ccs-tree-catalog/index.html'],
-    ['Polygon Corrector', 'https://communityclimate.github.io/ccs-polygon-corrector/'],
-  ];
-  const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = `CCS_Executive_Summary_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click();
-  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+  }, 50);
 }
 
 function exportLargePolygonsCSV() {
+  setTimeout(() => {
   if (!fieldsData.length) {
     alert('No field data loaded. Connect to Fieldforce and run allocation first.');
     return;
@@ -5506,7 +5461,10 @@ function exportLargePolygonsCSV() {
   a.download = `CCS_Large_Polygons_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }, 50);
 }
+
+function exportExecSummaryCSV() {
   if (!allocation.length) return;
   const total      = allocation.length;
   const allocated  = allocation.filter(r => r.status === 'Allocated').length;
