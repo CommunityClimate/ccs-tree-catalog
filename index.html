@@ -5255,7 +5255,6 @@ function renderExecSummary() {
 }
 
 function exportOverlapCSV() {
-  setTimeout(() => {
   if (!overlapPairsCache.length) {
     alert('No overlapping fields detected yet. Run allocation first, then wait for overlap detection to complete.');
     return;
@@ -5357,7 +5356,6 @@ function exportOverlapCSV() {
 }
 
 function exportLargePolygonsCSV() {
-  setTimeout(() => {
   if (!fieldsData.length) {
     alert('No field data loaded. Connect to Fieldforce and run allocation first.');
     return;
@@ -5461,7 +5459,6 @@ function exportLargePolygonsCSV() {
   a.download = `CCS_Large_Polygons_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
-  }, 50);
 }
 
 function exportExecSummaryCSV() {
