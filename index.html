@@ -1281,6 +1281,13 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
           ⧖ Overlapping fields <span id="overlapFilterCount" style="font-weight:800"></span>
         </button>
       </div>
+      <div style="margin-top:6px">
+        <button class="btn" id="btnShowLargePoly" onclick="showLargePolyPanel()" style="display:none;
+          width:100%;font-size:9px;background:rgba(167,139,250,0.05);color:var(--purple);
+          border:1px solid rgba(167,139,250,0.3);font-weight:700;letter-spacing:0.5px">
+          ⬡ Large polygons <span id="largePolyFilterCount" style="font-weight:800"></span>
+        </button>
+      </div>
     </div>
 
     <!-- Excluded Fields — collapsible -->
@@ -1496,6 +1503,49 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
               </tr>
             </thead>
             <tbody id="suspectBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Large Polygons panel -->
+      <div class="suspect-panel" id="largePolyPanel" style="display:none;border-color:var(--purple-b, rgba(167,139,250,0.3))">
+        <div class="suspect-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px">⬡</span>
+            <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:2px;
+              color:var(--purple);text-transform:uppercase">Large Field Polygons — Possible Boundary Errors</span>
+            <span id="largePolySummary" style="font-family:var(--font-mono);font-size:10px;color:var(--muted)"></span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button id="btnExcludeLarge" onclick="excludeLargePolygons()"
+              style="font-size:9px;padding:4px 10px;background:rgba(167,139,250,0.1);
+              color:var(--purple);border:1px solid rgba(167,139,250,0.3);border-radius:4px;
+              cursor:pointer;font-weight:700;display:none">
+              ✕ Exclude All Suspect
+            </button>
+            <button onclick="exportLargePolygonsCSV()"
+              style="font-size:9px;padding:4px 10px;background:var(--card);
+              color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer">
+              ⬇ Export
+            </button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin:6px 0 10px;line-height:1.6">
+          Fields whose polygon area is unusually large or whose calculated area is 3× greater than the stored size.
+          Large polygons cause widespread false mismatches — trees from many other fields fall inside them spatially.
+          Excluding them immediately improves compliance numbers.
+        </div>
+        <div class="suspect-table-wrap">
+          <table class="suspect-tbl">
+            <thead>
+              <tr>
+                <th>Field ID</th><th>Owner</th>
+                <th>Calc. Area (ha)</th><th>Stored (ha)</th>
+                <th>Trees</th><th>Mismatch %</th>
+                <th>Flag</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="largePolyBody"></tbody>
           </table>
         </div>
       </div>
@@ -2428,6 +2478,8 @@ async function runAllocation() {
   updateSuspectTable();
   // Run overlap detection after a short delay so it doesn't block allocation finalisation
   setTimeout(() => detectOverlappingFields(), 500);
+  // Run large polygon detection shortly after
+  setTimeout(() => detectLargePolygons(), 1100);
   syncWorkQueue(); // populate queue immediately after allocation
   document.getElementById('filterSection').style.display = '';
   document.getElementById('btnExport').disabled = false;
@@ -4094,8 +4146,13 @@ function clearAll() {
   document.getElementById('filterSection').style.display = 'none';
   const sideOvBtn = document.getElementById('btnShowOverlaps');
   if (sideOvBtn) sideOvBtn.style.display = 'none';
+  const sideLP = document.getElementById('btnShowLargePoly');
+  if (sideLP) sideLP.style.display = 'none';
   const ovPanel = document.getElementById('overlapPanel');
   if (ovPanel) ovPanel.style.display = 'none';
+  const lpPanel = document.getElementById('largePolyPanel');
+  if (lpPanel) lpPanel.style.display = 'none';
+  largePolyCache = [];
   document.getElementById('fieldList').innerHTML =
     '<div class="empty-state" style="padding:20px 12px">Upload files and run allocation to see fields</div>';
   document.getElementById('catalogBody').innerHTML =
@@ -5496,6 +5553,136 @@ function exportLargePolygonsCSV() {
   a.href = url; a.download = `CCS_Executive_Summary_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LARGE POLYGON DETECTION
+// ═══════════════════════════════════════════════════════════════════════════
+
+let largePolyCache = [];
+
+function ringAreaHa(ring) {
+  if (!ring || ring.length < 3) return 0;
+  const n = ring.length;
+  let area = 0;
+  const R = 6378137;
+  const cLat = ring.reduce((s,c) => s + c[1], 0) / n * Math.PI / 180;
+  const mPerDegLat = Math.PI * R / 180;
+  const mPerDegLng = mPerDegLat * Math.cos(cLat);
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = ring[i][0] * mPerDegLng; const yi = ring[i][1] * mPerDegLat;
+    const xj = ring[j][0] * mPerDegLng; const yj = ring[j][1] * mPerDegLat;
+    area += (xj + xi) * (yj - yi);
+  }
+  return Math.abs(area / 2) / 10000;
+}
+
+function detectLargePolygons() {
+  const panel = document.getElementById('largePolyPanel');
+  if (!fieldsData.length) { panel.style.display = 'none'; return; }
+
+  const fieldStats = {};
+  allocation.forEach(r => {
+    if (!r.matchedFieldId) return;
+    if (!fieldStats[r.matchedFieldId]) fieldStats[r.matchedFieldId] = { total:0, mismatch:0 };
+    fieldStats[r.matchedFieldId].total++;
+    if (r.status && r.status.includes('mismatch')) fieldStats[r.matchedFieldId].mismatch++;
+  });
+
+  largePolyCache = fieldsData
+    .filter(f => f.ring && f.ring.length >= 3)
+    .map(f => {
+      const areaHa   = ringAreaHa(f.ring);
+      const storedHa = (f.size || 0) / 10000;
+      const isLarge  = areaHa > 10;
+      const isCorrupt = storedHa > 0 && areaHa > storedHa * 3;
+      if (!isLarge && !isCorrupt) return null;
+      const stats = fieldStats[f.fieldId] || { total:0, mismatch:0 };
+      const mmRate = stats.total > 0 ? (stats.mismatch / stats.total * 100).toFixed(1) : '0.0';
+      const flag = isCorrupt
+        ? '⚠ Suspect — 3× stored size'
+        : '⬡ Large polygon';
+      return { f, areaHa, storedHa, stats, mmRate, flag, isCorrupt };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.areaHa - a.areaHa);
+
+  if (!largePolyCache.length) { panel.style.display = 'none'; return; }
+
+  const suspectCount = largePolyCache.filter(p => p.isCorrupt).length;
+  document.getElementById('largePolySummary').textContent =
+    `${largePolyCache.length} fields · ${suspectCount} suspect`;
+
+  const excludeBtn = document.getElementById('btnExcludeLarge');
+  if (excludeBtn) excludeBtn.style.display = suspectCount > 0 ? '' : 'none';
+
+  // Show sidebar button
+  const sideBtn = document.getElementById('btnShowLargePoly');
+  if (sideBtn) {
+    sideBtn.style.display = '';
+    document.getElementById('largePolyFilterCount').textContent =
+      `(${largePolyCache.length}${largePolyCache.length >= 50 ? '+' : ''})`;
+  }
+
+  renderLargePolyTable();
+  panel.style.display = '';
+}
+
+function showLargePolyPanel() {
+  switchTab('exceptions');
+  setTimeout(() => {
+    const panel = document.getElementById('largePolyPanel');
+    const inner = document.getElementById('excInner');
+    if (panel && inner) {
+      inner.scrollTo({ top: panel.offsetTop - 12, behavior: 'smooth' });
+      panel.style.outline = '2px solid var(--purple)';
+      setTimeout(() => panel.style.outline = '', 1800);
+    }
+  }, 350);
+}
+
+function renderLargePolyTable() {
+  const body = document.getElementById('largePolyBody');
+  if (!largePolyCache.length) { body.innerHTML = ''; return; }
+
+  body.innerHTML = largePolyCache.slice(0, 50).map(({ f, areaHa, storedHa, mmRate, flag, isCorrupt }) => {
+    const isExcl = excludedFieldIds.has(f.fieldId);
+    const flagCol = isCorrupt ? 'var(--red)' : 'var(--purple)';
+    return `<tr>
+      <td style="color:var(--blue);font-family:var(--font-mono);font-size:10px">${esc(f.fieldId)}</td>
+      <td style="color:var(--muted);font-size:9px">${esc(f.owner)}</td>
+      <td style="font-family:var(--font-mono);font-weight:700;color:${areaHa > 50 ? 'var(--red)' : 'var(--amber)'}">${areaHa.toFixed(1)}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${storedHa > 0 ? storedHa.toFixed(1) : '—'}</td>
+      <td style="color:var(--muted)">${(largePolyCache.find(p=>p.f===f)?.stats.total||0).toLocaleString()}</td>
+      <td>
+        <div class="rate-bar-wrap">
+          <div class="rate-track"><div class="rate-fill ${parseFloat(mmRate)>=90?'':'amber'}" style="width:${Math.min(parseFloat(mmRate),100)}%"></div></div>
+          <strong style="color:${parseFloat(mmRate)>=90?'var(--red)':'var(--amber)'}">${mmRate}%</strong>
+        </div>
+      </td>
+      <td style="font-size:9px;color:${flagCol};font-weight:700">${flag}</td>
+      <td>
+        <button class="btn-excl ${isExcl?'excluded':''}"
+          onclick="toggleExcludeField('${esc(f.fieldId)}');renderLargePolyTable()">
+          ${isExcl ? '✓ Excluded' : 'Exclude'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function excludeLargePolygons() {
+  // Exclude only the suspect ones (3× stored size) — not just large
+  const suspects = largePolyCache.filter(p => p.isCorrupt);
+  if (!suspects.length) return;
+  suspects.forEach(p => excludedFieldIds.add(p.f.fieldId));
+  renderLargePolyTable();
+  updateSuspectTable();
+  updateExclBanner();
+  recomputeWithExclusions();
+  document.getElementById('btnClearExclude').style.display = '';
+  document.getElementById('btnExcludeLarge').textContent =
+    `✓ ${suspects.length} suspect field${suspects.length>1?'s':''} excluded`;
 }
 
 // ── Why Errors Overlay ────────────────────────────────────────────────────
