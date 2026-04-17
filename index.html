@@ -5430,22 +5430,51 @@ function exportLargePolygonsCSV() {
     'Mismatches',
     'Mismatch Rate (%)',
     'Flag',
+    'Coords Within Zambia',
+    'Current GeoJSON (Fieldforce)',
   ];
 
-  const rows = results.map(({ f, areaHa, storedHa, stats, mmRate, flag }) => [
-    f.fieldId,
-    f.owner || '',
-    f.zone  || '',
-    areaHa.toFixed(2),
-    storedHa > 0 ? storedHa.toFixed(2) : '',
-    f.ring.length,
-    f.ring ? (f.ring.reduce((s,c) => s + c[1], 0) / f.ring.length).toFixed(6) : '',
-    f.ring ? (f.ring.reduce((s,c) => s + c[0], 0) / f.ring.length).toFixed(6) : '',
-    stats.total,
-    stats.mismatch,
-    mmRate,
-    flag,
-  ]);
+  const ZAMBIA_LNG_MIN = 22, ZAMBIA_LNG_MAX = 34;
+  const ZAMBIA_LAT_MIN = -18, ZAMBIA_LAT_MAX = -8;
+
+  const rows = results.map(({ f, areaHa, storedHa, stats, mmRate, flag }) => {
+    // Check if all vertices fall within Zambia bounds
+    const outOfBounds = f.ring.filter(c =>
+      c[0] < ZAMBIA_LNG_MIN || c[0] > ZAMBIA_LNG_MAX ||
+      c[1] < ZAMBIA_LAT_MIN || c[1] > ZAMBIA_LAT_MAX
+    );
+    const boundsStatus = outOfBounds.length === 0
+      ? 'Yes — all vertices within Zambia'
+      : `No — ${outOfBounds.length} vertex${outOfBounds.length > 1 ? 'es' : ''} outside Zambia bounds`;
+
+    // Reconstruct GeoJSON from the ring as stored in Fieldforce
+    // ring is in [lng, lat] format — this is the live Fieldforce geometry
+    const geojson = JSON.stringify({
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'Polygon',
+        coordinates: [f.ring]
+      }
+    });
+
+    return [
+      f.fieldId,
+      f.owner || '',
+      f.zone  || '',
+      areaHa.toFixed(2),
+      storedHa > 0 ? storedHa.toFixed(2) : '',
+      f.ring.length,
+      (f.ring.reduce((s,c) => s + c[1], 0) / f.ring.length).toFixed(6),
+      (f.ring.reduce((s,c) => s + c[0], 0) / f.ring.length).toFixed(6),
+      stats.total,
+      stats.mismatch,
+      mmRate,
+      flag,
+      boundsStatus,
+      geojson,
+    ];
+  });
 
   const csvRows = [header, ...rows];
   const csv = csvRows.map(r =>
