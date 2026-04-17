@@ -5352,7 +5352,6 @@ function exportOverlapCSV() {
   a.download = `CCS_Overlapping_Fields_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
-  }, 50);
 }
 
 function exportLargePolygonsCSV() {
