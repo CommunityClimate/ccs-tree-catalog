@@ -1517,6 +1517,12 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
             <span id="largePolySummary" style="font-family:var(--font-mono);font-size:10px;color:var(--muted)"></span>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
+            <button id="btnDeactivateAllLarge" onclick="deactivateAllSuspectLargePolygons()"
+              style="font-size:9px;padding:4px 10px;background:rgba(239,68,68,0.1);
+              color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:4px;
+              cursor:pointer;font-weight:700;display:none">
+              ⊘ Deactivate All Suspect
+            </button>
             <button id="btnExcludeLarge" onclick="excludeLargePolygons()"
               style="font-size:9px;padding:4px 10px;background:rgba(167,139,250,0.1);
               color:var(--purple);border:1px solid rgba(167,139,250,0.3);border-radius:4px;
@@ -1542,7 +1548,7 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
                 <th>Field ID</th><th>Owner</th>
                 <th>Calc. Area (ha)</th><th>Stored (ha)</th>
                 <th>Trees</th><th>Mismatch %</th>
-                <th>Flag</th><th></th>
+                <th>Flag</th><th>Status</th><th></th>
               </tr>
             </thead>
             <tbody id="largePolyBody"></tbody>
@@ -5598,6 +5604,8 @@ function detectLargePolygons() {
 
   const excludeBtn = document.getElementById('btnExcludeLarge');
   if (excludeBtn) excludeBtn.style.display = suspectCount > 0 ? '' : 'none';
+  const deactBtn = document.getElementById('btnDeactivateAllLarge');
+  if (deactBtn) deactBtn.style.display = suspectCount > 0 ? '' : 'none';
 
   // Show sidebar button
   const sideBtn = document.getElementById('btnShowLargePoly');
@@ -5629,14 +5637,41 @@ function renderLargePolyTable() {
   if (!largePolyCache.length) { body.innerHTML = ''; return; }
 
   body.innerHTML = largePolyCache.slice(0, 50).map(({ f, areaHa, storedHa, mmRate, flag, isCorrupt }) => {
-    const isExcl = excludedFieldIds.has(f.fieldId);
+    const isExcl  = excludedFieldIds.has(f.fieldId);
+    const isDeact = deactivatedFieldIds.has(f.fieldId);
     const flagCol = isCorrupt ? 'var(--red)' : 'var(--purple)';
-    return `<tr>
+    const treeCount = (largePolyCache.find(p=>p.f===f)?.stats.total||0);
+
+    // Status badge
+    const statusBadge = isDeact
+      ? `<span style="font-size:9px;font-weight:700;color:var(--muted);
+          background:rgba(255,255,255,0.05);border:1px solid var(--border);
+          border-radius:3px;padding:2px 6px">⊘ Inactive</span>`
+      : `<span style="font-size:9px;font-weight:700;color:var(--green);
+          background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);
+          border-radius:3px;padding:2px 6px">● Active</span>`;
+
+    // Deactivate / Activate button
+    const deactBtn = isDeact
+      ? `<button style="font-size:9px;padding:3px 8px;background:rgba(74,222,128,0.1);
+            color:var(--green);border:1px solid rgba(74,222,128,0.3);border-radius:4px;
+            cursor:pointer;font-weight:700;margin-left:4px"
+          onclick="activateField('${esc(f.fieldId)}','${esc(f.guid)}')">
+          ✓ Activate
+        </button>`
+      : `<button style="font-size:9px;padding:3px 8px;background:rgba(239,68,68,0.1);
+            color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:4px;
+            cursor:pointer;font-weight:700;margin-left:4px"
+          onclick="deactivateField('${esc(f.fieldId)}','${esc(f.guid)}',${treeCount})">
+          ⊘ Deactivate
+        </button>`;
+
+    return `<tr style="${isDeact?'opacity:0.5':''}">
       <td style="color:var(--blue);font-family:var(--font-mono);font-size:10px">${esc(f.fieldId)}</td>
       <td style="color:var(--muted);font-size:9px">${esc(f.owner)}</td>
       <td style="font-family:var(--font-mono);font-weight:700;color:${areaHa > 50 ? 'var(--red)' : 'var(--amber)'}">${areaHa.toFixed(1)}</td>
       <td style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${storedHa > 0 ? storedHa.toFixed(1) : '—'}</td>
-      <td style="color:var(--muted)">${(largePolyCache.find(p=>p.f===f)?.stats.total||0).toLocaleString()}</td>
+      <td style="color:var(--muted)">${treeCount.toLocaleString()}</td>
       <td>
         <div class="rate-bar-wrap">
           <div class="rate-track"><div class="rate-fill ${parseFloat(mmRate)>=90?'':'amber'}" style="width:${Math.min(parseFloat(mmRate),100)}%"></div></div>
@@ -5644,11 +5679,12 @@ function renderLargePolyTable() {
         </div>
       </td>
       <td style="font-size:9px;color:${flagCol};font-weight:700">${flag}</td>
-      <td>
+      <td>${statusBadge}</td>
+      <td style="white-space:nowrap">
         <button class="btn-excl ${isExcl?'excluded':''}"
           onclick="toggleExcludeField('${esc(f.fieldId)}');renderLargePolyTable()">
           ${isExcl ? '✓ Excluded' : 'Exclude'}
-        </button>
+        </button>${deactBtn}
       </td>
     </tr>`;
   }).join('');
@@ -5666,6 +5702,128 @@ function excludeLargePolygons() {
   document.getElementById('btnClearExclude').style.display = '';
   document.getElementById('btnExcludeLarge').textContent =
     `✓ ${suspects.length} suspect field${suspects.length>1?'s':''} excluded`;
+}
+
+// ── Fieldforce Activate / Deactivate ─────────────────────────────────────
+const deactivatedFieldIds = new Set();
+
+async function deactivateField(fieldId, guid, treeCount) {
+  // Safety check — warn if field has allocated trees
+  if (treeCount > 0) {
+    const confirmed = confirm(
+      `⚠ Safety Check\n\n` +
+      `"${fieldId}" has ${treeCount.toLocaleString()} tree${treeCount>1?'s':''} allocated to it.\n\n` +
+      `Deactivating will remove this field from compliance reporting and those trees will show as unallocated.\n\n` +
+      `Are you sure you want to deactivate this field in Fieldforce?`
+    );
+    if (!confirmed) return;
+  } else {
+    const confirmed = confirm(
+      `Deactivate "${fieldId}" in Fieldforce?\n\nThis field has no allocated trees. It will be set to Inactive and removed from reporting.`
+    );
+    if (!confirmed) return;
+  }
+
+  try {
+    const token = await getToken();
+    const res = await fetch(`${DV_API}/ccs_fields(${guid})`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'OData-MaxVersion': '4.0',
+        'OData-Version': '4.0',
+        'If-Match': '*'
+      },
+      body: JSON.stringify({ statecode: 1, statuscode: 2 })
+    });
+    if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+    deactivatedFieldIds.add(fieldId);
+    renderLargePolyTable();
+    showToast(`⊘ ${fieldId} deactivated in Fieldforce`, 'warn');
+  } catch(e) {
+    showToast(`Failed to deactivate ${fieldId}: ${e.message}`, 'error');
+  }
+}
+
+async function activateField(fieldId, guid) {
+  const confirmed = confirm(`Reactivate "${fieldId}" in Fieldforce?\n\nThis will set the field back to Active status.`);
+  if (!confirmed) return;
+
+  try {
+    const token = await getToken();
+    const res = await fetch(`${DV_API}/ccs_fields(${guid})`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'OData-MaxVersion': '4.0',
+        'OData-Version': '4.0',
+        'If-Match': '*'
+      },
+      body: JSON.stringify({ statecode: 0, statuscode: 1 })
+    });
+    if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+    deactivatedFieldIds.delete(fieldId);
+    renderLargePolyTable();
+    showToast(`✓ ${fieldId} reactivated in Fieldforce`, 'success');
+  } catch(e) {
+    showToast(`Failed to reactivate ${fieldId}: ${e.message}`, 'error');
+  }
+}
+
+async function deactivateAllSuspectLargePolygons() {
+  const suspects = largePolyCache.filter(p => p.isCorrupt && !deactivatedFieldIds.has(p.f.fieldId));
+  if (!suspects.length) return;
+
+  const withTrees    = suspects.filter(p => p.stats.total > 0);
+  const withoutTrees = suspects.filter(p => p.stats.total === 0);
+  const totalTrees   = withTrees.reduce((s, p) => s + p.stats.total, 0);
+
+  let msg = `⚠ Deactivate All Suspect Fields\n\n`;
+  msg += `${suspects.length} suspect field${suspects.length>1?'s':''} will be set to Inactive in Fieldforce.\n\n`;
+  if (withTrees.length > 0) {
+    msg += `⚠ ${withTrees.length} of these field${withTrees.length>1?'s':''} have a total of ${totalTrees.toLocaleString()} allocated tree${totalTrees>1?'s':''} — these trees will show as unallocated after deactivation.\n\n`;
+  }
+  msg += `${withoutTrees.length} field${withoutTrees.length>1?'s':''} have no allocated trees.\n\nThis action cannot be undone from the Tree Catalog. Continue?`;
+
+  if (!confirm(msg)) return;
+
+  const btn = document.getElementById('btnDeactivateAllLarge');
+  if (btn) { btn.textContent = '⊘ Deactivating…'; btn.disabled = true; }
+
+  let succeeded = 0, failed = 0;
+  for (const { f } of suspects) {
+    try {
+      const token = await getToken();
+      const res = await fetch(`${DV_API}/ccs_fields(${f.guid})`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'OData-MaxVersion': '4.0',
+          'OData-Version': '4.0',
+          'If-Match': '*'
+        },
+        body: JSON.stringify({ statecode: 1, statuscode: 2 })
+      });
+      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      deactivatedFieldIds.add(f.fieldId);
+      succeeded++;
+    } catch(e) {
+      failed++;
+    }
+  }
+
+  renderLargePolyTable();
+  if (btn) {
+    btn.textContent = `⊘ ${succeeded} deactivated${failed>0?` (${failed} failed)`:''}`;
+    btn.disabled = false;
+  }
+  showToast(
+    `⊘ ${succeeded} field${succeeded>1?'s':''} deactivated${failed>0?` · ${failed} failed`:''}`,
+    failed > 0 ? 'warn' : 'success'
+  );
 }
 
 // ── Why Errors Overlay ────────────────────────────────────────────────────
