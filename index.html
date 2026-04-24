@@ -2939,13 +2939,13 @@ function renderCatalog() {
     // Build clickable field ID cells
     const treeFieldCell = r.treeField
       ? `<span class="field-link tree-field"
-           onclick="openFieldMap('${esc(r.treeField)}')"
+           onclick="event.stopPropagation();openFieldMap('${esc(r.treeField)}')"
            title="View ${esc(r.treeField)} on map">${esc(r.treeField)}</span>`
       : '<span style="color:var(--muted)">—</span>';
 
     const matchedFieldCell = r.matchedFieldId
       ? `<span class="field-link matched-field"
-           onclick="openFieldMap('${esc(r.matchedFieldId)}')"
+           onclick="event.stopPropagation();openFieldMap('${esc(r.matchedFieldId)}')"
            title="View ${esc(r.matchedFieldId)} on map">${esc(r.matchedFieldId)}</span>`
       : '<span style="color:var(--muted)">—</span>';
 
@@ -3119,8 +3119,11 @@ function renderFieldMap(fieldId) {
     color: '#38bdf8', weight: 2.5, fillColor: '#38bdf8',
     fillOpacity: 0.08, dashArray: '7,5'
   }).addTo(map);
-  poly.on('click', () => openFieldLightbox(fieldId));
-  poly.on('mouseover', () => poly.setStyle({ fillOpacity: 0.18 }));
+  poly.on('click', (e) => {
+    L.DomEvent.stopPropagation(e);
+    openFieldLightbox(fieldId);
+  });
+  poly.on('mouseover', () => poly.setStyle({ fillOpacity: 0.18, cursor:'pointer' }));
   poly.on('mouseout',  () => poly.setStyle({ fillOpacity: 0.08 }));
   mapLayers.push(poly);
 
@@ -4204,12 +4207,9 @@ function switchTab(tab, pushState = true) {
   if (tab === 'map' && map) {
     setTimeout(() => map.invalidateSize(), 100);
   }
-  // Build exceptions lazily — only when tab is first opened after allocation
   if (tab === 'workqueue' && allocation.length) {
     wqLoad();
-    // Build suspect stats if not yet built
     if (!suspectFieldStats.length) buildSuspectFieldStats();
-    // Always sync queue when opening this tab — adds new items, auto-verifies resolved ones
     syncWorkQueue();
     renderWorkQueue();
   }
@@ -4217,11 +4217,18 @@ function switchTab(tab, pushState = true) {
     exceptionsBuilt = true;
     buildExceptionsAsync();
   }
-  // Populate live KPIs on Why Errors tab
   if (pushState) {
-    history.pushState({ tab }, '', `?tab=${tab}`);
+    // Use replaceState instead of pushState — prevents browser back
+    // button from reloading the page and losing the Fieldforce connection
+    history.replaceState({ tab }, '', `?tab=${tab}`);
   }
 }
+
+// Intercept browser back/forward — switch tabs without reloading the page
+window.addEventListener('popstate', e => {
+  const tab = e.state?.tab || 'catalog';
+  switchTab(tab, false);
+});
 
 // ── Async exceptions builder — chunked to avoid blocking the main thread ──────
 async function buildExceptionsAsync() {
