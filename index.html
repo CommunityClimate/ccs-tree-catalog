@@ -1082,6 +1082,11 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     <div class="kpi-chip red"><span class="kv" id="kpiOutside">—</span><span class="kl">Outside</span></div>
     <div class="kpi-chip amber"><span class="kv" id="kpiMismatch">—</span><span class="kl">Mismatches</span></div>
     <div class="kpi-chip amber"><span class="kv" id="kpiReview">—</span><span class="kl">Review</span></div>
+    <div class="kpi-chip" style="border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.06)"
+      title="Fields excluded from spatial matching because their polygon area exceeds 10 ha — prevents cascade capture">
+      <span class="kv" id="kpiOversized" style="color:var(--purple)">—</span>
+      <span class="kl">Oversized excl.</span>
+    </div>
   </div>
   <div class="header-spacer"></div>
   <button class="btn" onclick="openHandbook()" style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);padding:5px 10px;white-space:nowrap">? Help</button>
@@ -2350,13 +2355,25 @@ async function runAllocation() {
   setProgress(0, 'Building spatial index…', `${fieldsData.length.toLocaleString()} fields`);
   allocation = [];
 
-  // Filter out excluded polygons before building spatial index
-  // Excluded fields are skipped for spatial matching — trees fall back to treeField admin tag
-  const validFields = fieldsData.filter(f => f.ring && !excludedFields.has(f.fieldId));
+  // Filter out excluded polygons AND oversized polygons before building spatial index.
+  // Rationale: a real planted field is 0.5–5 ha at most. Polygons above 10 ha are
+  // either corrupt GPS boundaries or data entry errors. Allowing them into spatial
+  // matching causes cascade capture — a single 7-million-ha polygon can steal trees
+  // from thousands of legitimate fields. We exclude them analytically here regardless
+  // of whether they have been deactivated in Fieldforce.
+  const MAX_FIELD_HA = 10; // maximum plausible planted field size
+
+  const oversizedFields = fieldsData.filter(f =>
+    f.ring && !excludedFields.has(f.fieldId) && ringAreaHa(f.ring) > MAX_FIELD_HA
+  );
+  const validFields = fieldsData.filter(f =>
+    f.ring && !excludedFields.has(f.fieldId) && ringAreaHa(f.ring) <= MAX_FIELD_HA
+  );
   const skipped = fieldsData.filter(f => f.ring && excludedFields.has(f.fieldId));
-  if (skipped.length) {
+
+  if (oversizedFields.length || skipped.length) {
     setProgress(0, 'Building spatial index…',
-      `Excluding ${skipped.length} suspect polygon(s): ${skipped.map(f=>f.fieldId).join(', ')}`);
+      `Excluded from matching: ${skipped.length} manually excluded · ${oversizedFields.length} oversized (>${MAX_FIELD_HA} ha) — cascade capture prevented`);
     await new Promise(r => requestAnimationFrame(r));
   }
 
@@ -2430,8 +2447,12 @@ async function runAllocation() {
           const ownerMatch = !adminMatch && spatialMatches.find(f =>
             tree.fieldOwner && f.owner.toLowerCase().trim() === tree.fieldOwner.toLowerCase().trim()
           );
-          // Priority 3: first spatial hit
-          matchedField = adminMatch || ownerMatch || spatialMatches[0];
+          // Priority 3: smallest-container-wins — the smallest polygon is the most
+          // specific match and least likely to be a boundary error capturing stray trees
+          const smallestMatch = !adminMatch && !ownerMatch && spatialMatches.length > 0
+            ? spatialMatches.sort((a, b) => ringAreaHa(a.ring) - ringAreaHa(b.ring))[0]
+            : null;
+          matchedField = adminMatch || ownerMatch || smallestMatch;
         }
       }
 
@@ -2517,13 +2538,16 @@ function updateKPIs() {
   const outside  = allocation.filter(r => !r.insidePolygon).length;
   const mismatch = allocation.filter(r => r.status && r.status.includes('mismatch')).length;
   const review   = allocation.filter(r => r.status && (r.status.includes('mismatch') || r.status === 'Outside polygon but field tagged')).length;
+  const oversized = fieldsData.filter(f => f.ring && ringAreaHa(f.ring) > 10).length;
 
-  document.getElementById('kpiFields').textContent  = fieldsData.length;
-  document.getElementById('kpiTrees').textContent   = treesData.length;
-  document.getElementById('kpiInside').textContent  = inside;
-  document.getElementById('kpiOutside').textContent = outside;
+  document.getElementById('kpiFields').textContent   = fieldsData.length;
+  document.getElementById('kpiTrees').textContent    = treesData.length;
+  document.getElementById('kpiInside').textContent   = inside;
+  document.getElementById('kpiOutside').textContent  = outside;
   document.getElementById('kpiMismatch').textContent = mismatch;
-  document.getElementById('kpiReview').textContent  = review;
+  document.getElementById('kpiReview').textContent   = review;
+  const oversizedEl = document.getElementById('kpiOversized');
+  if (oversizedEl) oversizedEl.textContent = oversized;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -4144,7 +4168,7 @@ function clearAll() {
     document.getElementById(id).className = 'upload-status';
   });
   ['fileFields','fileTrees'].forEach(id => document.getElementById(id).value = '');
-  ['kpiFields','kpiTrees','kpiInside','kpiOutside','kpiMismatch','kpiReview']
+  ['kpiFields','kpiTrees','kpiInside','kpiOutside','kpiMismatch','kpiReview','kpiOversized']
     .forEach(id => document.getElementById(id).textContent = '—');
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnExport').disabled = true;
