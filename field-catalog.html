@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>CCS Field Tree Catalog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
+:root {
+  --bg:      #080c10;
+  --panel:   #0f1520;
+  --card:    #141d2b;
+  --border:  #1f2e42;
+  --text:    #d4e4f7;
+  --muted:   #6b88a8;
+  --green:   #22c55e;
+  --green-b: rgba(34,197,94,0.25);
+  --green-bg:rgba(34,197,94,0.08);
+  --red:     #ef4444;
+  --red-b:   rgba(239,68,68,0.25);
+  --red-bg:  rgba(239,68,68,0.08);
+  --amber:   #f59e0b;
+  --blue:    #38bdf8;
+  --blue-b:  rgba(56,189,248,0.25);
+  --blue-bg: rgba(56,189,248,0.08);
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text);
+  height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ── HEADER ── */
+header {
+  background:var(--panel); border-bottom:1px solid var(--border);
+  padding:0 14px; height:46px; display:flex; align-items:center;
+  gap:10px; flex-shrink:0;
+}
+.logo { font-family:var(--mono); font-size:11px; font-weight:700;
+  letter-spacing:1.5px; text-transform:uppercase; color:var(--text); }
+.logo span { color:var(--green); }
+.hd { width:1px; height:22px; background:var(--border); }
+.kpi { display:flex; align-items:center; gap:6px; background:var(--card);
+  border:1px solid var(--border); border-radius:4px; padding:3px 10px;
+  font-family:var(--mono); font-size:11px; }
+.kpi .v { font-weight:700; font-size:13px; }
+.kpi.g { border-color:var(--green-b); background:var(--green-bg); }
+.kpi.g .v { color:var(--green); }
+.kpi.r { border-color:var(--red-b); background:var(--red-bg); }
+.kpi.r .v { color:var(--red); }
+.kpi.b { border-color:var(--blue-b); background:var(--blue-bg); }
+.kpi.b .v { color:var(--blue); }
+.kpi .l { color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:1px; }
+.sp { flex:1; }
+
+/* ── MAIN ── */
+.main { display:flex; flex:1; overflow:hidden; }
+
+/* ── LEFT ── */
+.left { width:280px; flex-shrink:0; background:var(--panel);
+  border-right:1px solid var(--border); display:flex;
+  flex-direction:column; overflow-y:auto; }
+.sec { padding:10px 12px; border-bottom:1px solid var(--border); }
+.sec-lbl { font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:1.5px; color:var(--muted); text-transform:uppercase;
+  display:block; margin-bottom:8px; }
+
+/* Connect button */
+.btn-ff { background:linear-gradient(135deg,#0078d4,#005a9e); color:#fff;
+  border:none; border-radius:4px; padding:8px 12px; font-weight:700;
+  font-size:11px; cursor:pointer; width:100%; letter-spacing:.5px;
+  transition:opacity .15s; font-family:var(--mono); }
+.btn-ff:hover { opacity:.85; }
+.ff-status { font-family:var(--mono); font-size:10px; color:var(--muted);
+  margin-top:6px; line-height:1.5; }
+.ff-status.ok  { color:var(--green); }
+.ff-status.err { color:var(--red); }
+
+/* Filter */
+select { width:100%; background:var(--bg); border:1px solid var(--border);
+  border-radius:4px; color:var(--text); font-family:var(--mono);
+  font-size:11px; padding:5px 7px; outline:none; margin-bottom:5px; }
+select:focus { border-color:var(--green); }
+select option { background:var(--panel); }
+input[type=text] { width:100%; background:var(--bg); border:1px solid var(--border);
+  border-radius:4px; color:var(--text); font-family:var(--mono);
+  font-size:11px; padding:5px 7px; outline:none; }
+input[type=text]:focus { border-color:var(--green); }
+
+/* ── CATALOG GRID ── */
+.catalog-wrap { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.cat-toolbar { padding:8px 12px; background:var(--panel);
+  border-bottom:1px solid var(--border); display:flex;
+  align-items:center; gap:8px; flex-shrink:0; }
+.cat-grid { flex:1; overflow-y:auto; padding:12px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:10px; align-content:start; }
+.cat-card { background:var(--card); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden; cursor:pointer;
+  transition:border-color .15s; }
+.cat-card:hover { border-color:var(--green); }
+.cat-card .map-thumb { width:100%; height:140px; background:#0a0c12; }
+.cat-card .info { padding:8px 10px; }
+.cat-card .fid { font-family:var(--mono); font-size:10px; font-weight:700;
+  color:var(--blue); margin-bottom:3px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.cat-card .owner { font-size:10px; color:var(--muted); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+.cat-card .stats { display:flex; gap:6px; }
+.badge { font-family:var(--mono); font-size:9px; font-weight:700;
+  padding:2px 6px; border-radius:3px; }
+.badge.in  { background:var(--green-bg); color:var(--green); border:1px solid var(--green-b); }
+.badge.out { background:var(--red-bg);   color:var(--red);   border:1px solid var(--red-b); }
+.badge.na  { background:var(--card);     color:var(--muted); border:1px solid var(--border); }
+
+/* ── LIGHTBOX ── */
+.lb { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.8);
+  backdrop-filter:blur(4px); display:none; align-items:center;
+  justify-content:center; }
+.lb.open { display:flex; }
+.lb-box { background:var(--card); border:1px solid var(--border);
+  border-radius:10px; width:min(740px,96vw); max-height:90vh;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 24px 64px rgba(0,0,0,.7); }
+.lb-hdr { display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.lb-title { font-family:var(--mono); font-size:12px; font-weight:700; color:var(--blue); }
+.lb-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+.lb-close { background:none; border:none; color:var(--muted);
+  font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; }
+.lb-close:hover { color:var(--text); }
+.lb-map { width:100%; height:340px; flex-shrink:0; }
+.lb-legend { display:flex; gap:14px; padding:6px 14px;
+  border-bottom:1px solid var(--border); flex-shrink:0; font-size:10px; color:var(--muted); }
+.lb-legend span { display:flex; align-items:center; gap:5px; }
+.dot { display:inline-block; width:10px; height:10px; border-radius:50%; }
+.lb-stats { display:grid; grid-template-columns:repeat(4,1fr); flex-shrink:0; }
+.lb-stat { padding:12px; text-align:center; border-right:1px solid var(--border); }
+.lb-stat:last-child { border-right:none; }
+.lb-stat .v { font-family:var(--mono); font-size:20px; font-weight:800; line-height:1; margin-bottom:4px; }
+.lb-stat .l { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.lb-foot { padding:10px 14px; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end; gap:8px; flex-shrink:0; }
+.btn { border:none; border-radius:4px; cursor:pointer; font-weight:700;
+  font-size:11px; padding:7px 14px; font-family:var(--mono); transition:opacity .15s; }
+.btn:hover { opacity:.85; }
+.btn-primary { background:var(--green); color:#000; }
+.btn-sec { background:var(--border); color:var(--text); }
+
+/* ── EMPTY / LOADING ── */
+.empty { color:var(--muted); font-family:var(--mono); font-size:11px;
+  text-align:center; padding:40px 20px; line-height:2.5; }
+.spinner { width:20px; height:20px; border:2px solid var(--border);
+  border-top-color:var(--green); border-radius:50%;
+  animation:spin .7s linear infinite; display:inline-block; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌳 CCS <span>Field</span> Tree Catalog</div>
+  <div class="hd"></div>
+  <div class="kpi b"><span class="v" id="kpiFields">—</span><span class="l">Fields</span></div>
+  <div class="kpi b"><span class="v" id="kpiTrees">—</span><span class="l">Trees</span></div>
+  <div class="kpi g"><span class="v" id="kpiInside">—</span><span class="l">Inside</span></div>
+  <div class="kpi r"><span class="v" id="kpiOutside">—</span><span class="l">Outside</span></div>
+  <div class="sp"></div>
+  <div class="kpi" id="kpiPct" style="font-family:var(--mono);font-size:13px;font-weight:700">—</div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="left">
+    <div class="sec">
+      <span class="sec-lbl">☁ Fieldforce</span>
+      <button class="btn-ff" onclick="connect()">Connect to Fieldforce</button>
+      <div class="ff-status" id="ffStatus">Connect to load fields and trees</div>
+    </div>
+    <div class="sec">
+      <span class="sec-lbl">Filter</span>
+      <select id="fltStatus" onchange="render()">
+        <option value="">All fields</option>
+        <option value="inside">✓ All trees inside</option>
+        <option value="outside">✗ Has trees outside</option>
+        <option value="no_trees">No trees recorded</option>
+        <option value="no_poly">No polygon</option>
+      </select>
+      <input type="text" id="fltSearch" placeholder="Search field ID…" oninput="render()"/>
+    </div>
+    <div class="sec">
+      <span class="sec-lbl" id="fieldCount">Fields</span>
+    </div>
+  </div>
+
+  <!-- CATALOG -->
+  <div class="catalog-wrap">
+    <div class="cat-toolbar">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted)" id="catCount"></span>
+      <div style="flex:1"></div>
+      <span style="font-size:10px;color:var(--muted)">Click any field to inspect polygon + trees</span>
+    </div>
+    <div class="cat-grid" id="catGrid">
+      <div class="empty" style="grid-column:1/-1">Connect to Fieldforce to load fields and trees</div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lb" id="lb" onclick="if(event.target===this)closeLb()">
+  <div class="lb-box">
+    <div class="lb-hdr">
+      <div>
+        <div class="lb-title" id="lbTitle">—</div>
+        <div class="lb-sub" id="lbSub">—</div>
+      </div>
+      <button class="lb-close" onclick="closeLb()">✕</button>
+    </div>
+    <div class="lb-map" id="lbMap"></div>
+    <div class="lb-legend">
+      <span><span class="dot" style="background:#22c55e"></span>Inside polygon</span>
+      <span><span class="dot" style="background:#ef4444"></span>Outside polygon</span>
+      <span><span class="dot" style="background:#38bdf8;width:8px;height:8px;border-radius:2px"></span>Field boundary</span>
+    </div>
+    <div class="lb-stats">
+      <div class="lb-stat">
+        <div class="v" id="lbTotal" style="color:var(--blue)">—</div>
+        <div class="l">Total Trees</div>
+      </div>
+      <div class="lb-stat">
+        <div class="v" id="lbInside" style="color:var(--green)">—</div>
+        <div class="l">Inside</div>
+      </div>
+      <div class="lb-stat">
+        <div class="v" id="lbOutside" style="color:var(--red)">—</div>
+        <div class="l">Outside</div>
+      </div>
+      <div class="lb-stat">
+        <div class="v" id="lbPct">—</div>
+        <div class="l">Compliance</div>
+      </div>
+    </div>
+    <div class="lb-foot">
+      <button class="btn btn-sec" onclick="closeLb()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── MSAL CONFIG ────────────────────────────────────────────────────────────
+const MSAL_CONFIG = {
+  auth: {
+    clientId:    '3d61678f-e900-426f-a05c-4a765736f9c7',
+    authority:   'https://login.microsoftonline.com/f9198cfe-2489-4324-b66f-e27f00e3f667',
+    redirectUri: window.location.origin + window.location.pathname
+  },
+  cache: { cacheLocation: 'sessionStorage' }
+};
+const DV_ENV   = 'https://fieldforce.crm14.dynamics.com';
+const DV_API   = `${DV_ENV}/api/data/v9.2`;
+const DV_SCOPE = [`${DV_ENV}/user_impersonation`];
+let msalInstance = null;
+let dvAccount    = null;
+
+function getMSAL() {
+  if (!msalInstance) msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+  return msalInstance;
+}
+async function getToken() {
+  const app = getMSAL();
+  const accounts = app.getAllAccounts();
+  if (accounts.length) dvAccount = accounts[0];
+  const req = { scopes: DV_SCOPE, account: dvAccount || undefined };
+  try {
+    const r = await app.acquireTokenSilent(req);
+    dvAccount = r.account; return r.accessToken;
+  } catch(e) {
+    const r = await app.acquireTokenPopup(req);
+    dvAccount = r.account; return r.accessToken;
+  }
+}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+let fieldsData = [];     // { fieldId, owner, geoJSON, ring, guid }
+let treesByField = {};   // fieldId → [{lat, lng}]
+
+// ── SPATIAL ────────────────────────────────────────────────────────────────
+function pip(lat, lng, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if (((yi > lat) !== (yj > lat)) &&
+        (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi))
+      inside = !inside;
+  }
+  return inside;
+}
+
+function parseGeoJSON(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  function valid(r) {
+    return Array.isArray(r) && r.length >= 3 &&
+      Array.isArray(r[0]) && r[0].length === 2 &&
+      typeof r[0][0] === 'number' && !isNaN(r[0][0]);
+  }
+  function tryParse(str) {
+    try {
+      const obj = JSON.parse(str);
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        const geo = obj.geometry || obj;
+        if (geo && geo.type === 'Polygon')      return geo.coordinates[0];
+        if (geo && geo.type === 'MultiPolygon') return geo.coordinates[0][0];
+      }
+      if (Array.isArray(obj)) {
+        if (Array.isArray(obj[0]) && Array.isArray(obj[0][0])) return obj[0];
+        if (Array.isArray(obj[0]) && typeof obj[0][0] === 'number') return obj;
+      }
+    } catch(e) {}
+    return null;
+  }
+  let r = tryParse(s);
+  if (r && valid(r)) return r;
+  const pairs = [];
+  const re = /\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]/g;
+  let m;
+  while ((m = re.exec(s)) !== null)
+    pairs.push([parseFloat(m[1]), parseFloat(m[2])]);
+  return pairs.length >= 3 ? pairs : null;
+}
+
+function autoLatLng(a, b) {
+  if (a < 0 && b > 0) return { lat: a, lng: b };
+  if (b < 0 && a > 0) return { lat: b, lng: a };
+  if (Math.abs(a) < 90) return { lat: a, lng: b };
+  return { lat: b, lng: a };
+}
+
+// ── FIELDFORCE FETCH ───────────────────────────────────────────────────────
+function setStatus(msg, cls = '') {
+  const el = document.getElementById('ffStatus');
+  el.textContent = msg;
+  el.className = 'ff-status ' + cls;
+}
+
+async function dvFetchAll(token, url, label) {
+  const rows = [];
+  let page = 0;
+  while (url) {
+    page++;
+    setStatus(`⬇ ${label}: page ${page} (${rows.length.toLocaleString()} so far)…`, 'ok');
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'OData-MaxVersion': '4.0', 'OData-Version': '4.0',
+        'Prefer': 'odata.maxpagesize=5000,odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    rows.push(...(data.value || []));
+    url = data['@odata.nextLink'] || null;
+  }
+  return rows;
+}
+
+async function connect() {
+  const btn = document.querySelector('.btn-ff');
+  btn.disabled = true;
+  btn.textContent = '⏳ Connecting…';
+  setStatus('Authenticating…', 'ok');
+
+  try {
+    const token = await getToken();
+    const name = dvAccount?.name || 'Connected';
+    btn.textContent = `✓ ${name}`;
+    btn.style.background = 'linear-gradient(135deg,#16a34a,#22c55e)';
+
+    // Load fields
+    setStatus('Loading fields…', 'ok');
+    const fRows = await dvFetchAll(token,
+      `${DV_API}/ccs_fields?$select=ccs_cssfieldid_field,ccs_fieldgeojson_field,_ccs_fieldowner_field_value,ccs_fieldsizem2_field&$filter=statecode eq 0`,
+      'Fields'
+    );
+
+    fieldsData = fRows.map(r => ({
+      guid:    String(r.ccs_fieldid || '').toLowerCase(),
+      fieldId: String(r.ccs_cssfieldid_field || '').trim(),
+      owner:   String(r['_ccs_fieldowner_field_value@OData.Community.Display.V1.FormattedValue'] || ''),
+      geoJSON: String(r.ccs_fieldgeojson_field || ''),
+      ring:    null
+    })).map(f => { f.ring = parseGeoJSON(f.geoJSON); return f; })
+      .filter(f => f.fieldId);
+
+    // Load trees
+    setStatus('Loading trees…', 'ok');
+    const tRows = await dvFetchAll(token,
+      `${DV_API}/ccs_trees?$select=ccs_treelatitude_tree,ccs_treelongitude_tree,_ccs_field_tree_value&$filter=statecode eq 0`,
+      'Trees'
+    );
+
+    // Build fieldId lookup from guid
+    const guidToId = {};
+    fieldsData.forEach(f => { if (f.guid) guidToId[f.guid.toLowerCase()] = f.fieldId; });
+
+    treesByField = {};
+    let treeCount = 0;
+    tRows.forEach(r => {
+      const lat = parseFloat(r.ccs_treelatitude_tree);
+      const lng = parseFloat(r.ccs_treelongitude_tree);
+      if (isNaN(lat) || isNaN(lng)) return;
+      const coords = autoLatLng(lat, lng);
+      const guid   = (r['_ccs_field_tree_value'] || '').toLowerCase();
+      const fid    = guidToId[guid];
+      if (!fid) return;
+      if (!treesByField[fid]) treesByField[fid] = [];
+      treesByField[fid].push({ lat: coords.lat, lng: coords.lng });
+      treeCount++;
+    });
+
+    // KPIs
+    updateKPIs();
+    setStatus(`✓ ${fieldsData.length.toLocaleString()} fields · ${treeCount.toLocaleString()} trees loaded`, 'ok');
+    document.getElementById('fieldCount').textContent =
+      `Fields (${fieldsData.length.toLocaleString()})`;
+    render();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Connect to Fieldforce';
+    btn.style.background = '';
+    setStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function updateKPIs() {
+  let totalIn = 0, totalOut = 0;
+  fieldsData.forEach(f => {
+    const trees = treesByField[f.fieldId] || [];
+    if (!f.ring || !trees.length) return;
+    trees.forEach(t => {
+      if (pip(t.lat, t.lng, f.ring)) totalIn++;
+      else totalOut++;
+    });
+  });
+  const total = totalIn + totalOut;
+  const pct = total > 0 ? Math.round(totalIn / total * 100) : 0;
+  const pctCol = pct >= 90 ? '#22c55e' : pct >= 70 ? '#f59e0b' : '#ef4444';
+  document.getElementById('kpiFields').textContent  = fieldsData.length.toLocaleString();
+  document.getElementById('kpiTrees').textContent   = total.toLocaleString();
+  document.getElementById('kpiInside').textContent  = totalIn.toLocaleString();
+  document.getElementById('kpiOutside').textContent = totalOut.toLocaleString();
+  const kpiPct = document.getElementById('kpiPct');
+  kpiPct.textContent = pct + '% compliant';
+  kpiPct.style.color = pctCol;
+}
+
+// ── RENDER CATALOG ─────────────────────────────────────────────────────────
+function render() {
+  const filter = document.getElementById('fltStatus').value;
+  const q      = document.getElementById('fltSearch').value.toLowerCase().trim();
+  const grid   = document.getElementById('catGrid');
+
+  if (!fieldsData.length) return;
+
+  const visible = fieldsData.filter(f => {
+    if (q && !f.fieldId.toLowerCase().includes(q) &&
+              !f.owner.toLowerCase().includes(q)) return false;
+    const trees = treesByField[f.fieldId] || [];
+    if (filter === 'no_poly')   return !f.ring;
+    if (filter === 'no_trees')  return trees.length === 0;
+    if (!f.ring) return filter === '' ;
+    if (filter === 'inside') {
+      return trees.length > 0 && trees.every(t => pip(t.lat, t.lng, f.ring));
+    }
+    if (filter === 'outside') {
+      return trees.some(t => !pip(t.lat, t.lng, f.ring));
+    }
+    return true;
+  });
+
+  document.getElementById('catCount').textContent =
+    `${visible.length.toLocaleString()} of ${fieldsData.length.toLocaleString()} fields`;
+
+  if (!visible.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No fields match the current filter</div>';
+    return;
+  }
+
+  grid.innerHTML = visible.map((f, i) => {
+    const trees  = treesByField[f.fieldId] || [];
+    const hasRing = !!f.ring;
+    let inCount = 0, outCount = 0;
+    if (hasRing) {
+      trees.forEach(t => pip(t.lat, t.lng, f.ring) ? inCount++ : outCount++);
+    }
+    const pct = trees.length > 0 ? Math.round(inCount / trees.length * 100) : null;
+    const pctBadge = pct !== null
+      ? `<span class="badge" style="background:${pct>=90?'rgba(34,197,94,0.1)':pct>=70?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)'};color:${pct>=90?'#22c55e':pct>=70?'#f59e0b':'#ef4444'};border:1px solid ${pct>=90?'rgba(34,197,94,0.3)':pct>=70?'rgba(245,158,11,0.3)':'rgba(239,68,68,0.3)'}">${pct}%</span>`
+      : '';
+    return `<div class="cat-card" onclick="openLb(${fieldsData.indexOf(f)})">
+      <div class="map-thumb" id="thumb_${i}" data-idx="${fieldsData.indexOf(f)}">
+        <div style="width:100%;height:100%;display:flex;align-items:center;
+          justify-content:center;color:var(--muted);font-size:10px;font-family:var(--mono)">
+          ${hasRing ? 'Loading map…' : 'No polygon'}
+        </div>
+      </div>
+      <div class="info">
+        <div class="fid">${f.fieldId}</div>
+        <div class="owner">${f.owner || '—'}</div>
+        <div class="stats">
+          ${trees.length > 0
+            ? `<span class="badge in">${inCount} in</span>
+               ${outCount > 0 ? `<span class="badge out">${outCount} out</span>` : ''}
+               ${pctBadge}`
+            : `<span class="badge na">No trees</span>`}
+          ${!hasRing ? `<span class="badge na">No polygon</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Lazy-load mini maps
+  initThumbs(visible);
+}
+
+// ── THUMBNAIL MAPS ─────────────────────────────────────────────────────────
+const thumbMaps = {};
+
+function initThumbs(visible) {
+  // Use IntersectionObserver for lazy loading
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el  = entry.target;
+      const idx = parseInt(el.dataset.idx);
+      const f   = fieldsData[idx];
+      if (!f || !f.ring || thumbMaps[idx]) return;
+      observer.unobserve(el);
+      buildThumb(el, f, idx);
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('[id^="thumb_"]').forEach(el => {
+    const idx = parseInt(el.dataset.idx);
+    const f   = fieldsData[idx];
+    if (f && f.ring) observer.observe(el);
+  });
+}
+
+function buildThumb(container, f, idx) {
+  if (thumbMaps[idx]) return;
+  try {
+    const m = L.map(container, {
+      zoomControl:false, attributionControl:false,
+      dragging:false, scrollWheelZoom:false,
+      doubleClickZoom:false, keyboard:false, tap:false
+    });
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21
+    }).addTo(m);
+
+    const latLngs = f.ring.map(c => [c[1], c[0]]);
+    const poly = L.polygon(latLngs, {
+      color:'#38bdf8', weight:1.5, fillColor:'#38bdf8',
+      fillOpacity:0.08, dashArray:'5,4'
+    }).addTo(m);
+
+    // Tree dots
+    const trees = treesByField[f.fieldId] || [];
+    const step  = trees.length > 200 ? Math.ceil(trees.length / 200) : 1;
+    trees.forEach((t, i) => {
+      if (i % step !== 0) return;
+      L.circleMarker([t.lat, t.lng], {
+        radius:3, color:'rgba(255,255,255,0.3)', weight:0.5,
+        fillColor: pip(t.lat, t.lng, f.ring) ? '#22c55e' : '#ef4444',
+        fillOpacity:0.9
+      }).addTo(m);
+    });
+
+    m.fitBounds(poly.getBounds(), { padding:[8,8] });
+    setTimeout(() => { try { m.invalidateSize(); } catch(e){} }, 100);
+    thumbMaps[idx] = m;
+  } catch(e) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:10px">Map error</div>';
+  }
+}
+
+// ── LIGHTBOX ───────────────────────────────────────────────────────────────
+let lbMap = null;
+
+function openLb(idx) {
+  const f = fieldsData[idx];
+  if (!f) return;
+
+  document.getElementById('lbTitle').textContent = f.fieldId;
+  document.getElementById('lbSub').textContent   = f.owner || '—';
+
+  const trees   = treesByField[f.fieldId] || [];
+  const ring    = f.ring;
+  let inCount = 0, outCount = 0;
+  if (ring && trees.length) {
+    trees.forEach(t => pip(t.lat, t.lng, ring) ? inCount++ : outCount++);
+  }
+  const total = trees.length;
+  const pct   = total > 0 ? Math.round(inCount / total * 100) : null;
+  const pctCol = pct === null ? 'var(--muted)'
+    : pct >= 90 ? '#22c55e' : pct >= 70 ? '#f59e0b' : '#ef4444';
+
+  document.getElementById('lbTotal').textContent   = total.toLocaleString();
+  document.getElementById('lbInside').textContent  = ring ? inCount.toLocaleString() : '—';
+  document.getElementById('lbOutside').textContent = ring ? outCount.toLocaleString() : '—';
+  document.getElementById('lbPct').textContent     = pct !== null ? pct + '%' : '—';
+  document.getElementById('lbPct').style.color     = pctCol;
+
+  document.getElementById('lb').classList.add('open');
+
+  // Build map
+  const mapEl = document.getElementById('lbMap');
+  mapEl.innerHTML = '';
+  if (lbMap) { try { lbMap.remove(); } catch(e){} lbMap = null; }
+
+  setTimeout(() => {
+    if (!ring) {
+      mapEl.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">No polygon geometry</div>';
+      return;
+    }
+
+    lbMap = L.map(mapEl, { zoomControl:true, attributionControl:false });
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21
+    }).addTo(lbMap);
+
+    const latLngs = ring.map(c => [c[1], c[0]]);
+    const poly = L.polygon(latLngs, {
+      color:'#38bdf8', weight:2, fillColor:'#38bdf8',
+      fillOpacity:0.08, dashArray:'6,4'
+    }).addTo(lbMap);
+
+    // All trees as dots
+    trees.forEach(t => {
+      const inside = pip(t.lat, t.lng, ring);
+      L.circleMarker([t.lat, t.lng], {
+        radius:5, color:'rgba(255,255,255,0.4)', weight:1,
+        fillColor: inside ? '#22c55e' : '#ef4444',
+        fillOpacity:0.9
+      }).addTo(lbMap);
+    });
+
+    lbMap.fitBounds(poly.getBounds(), { padding:[24,24] });
+    setTimeout(() => { try { lbMap.invalidateSize(); } catch(e){} }, 150);
+  }, 60);
+}
+
+function closeLb() {
+  document.getElementById('lb').classList.remove('open');
+  if (lbMap) { try { lbMap.remove(); } catch(e){} lbMap = null; }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLb();
+});
+</script>
+</body>
+</html>
