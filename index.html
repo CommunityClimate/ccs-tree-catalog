@@ -1083,9 +1083,9 @@ table.suspect-tbl tr:hover td { background: var(--panel); }
     <div class="kpi-chip amber"><span class="kv" id="kpiMismatch">—</span><span class="kl">Mismatches</span></div>
     <div class="kpi-chip amber"><span class="kv" id="kpiReview">—</span><span class="kl">Review</span></div>
     <div class="kpi-chip" style="border-color:rgba(167,139,250,0.3);background:rgba(167,139,250,0.06)"
-      title="Fields excluded from spatial matching because their polygon area exceeds 10 ha — prevents cascade capture">
+      title="Fields manually excluded from spatial matching">
       <span class="kv" id="kpiOversized" style="color:var(--purple)">—</span>
-      <span class="kl">Oversized excl.</span>
+      <span class="kl">Excl. fields</span>
     </div>
   </div>
   <div class="header-spacer"></div>
@@ -2361,25 +2361,18 @@ async function runAllocation() {
   setProgress(0, 'Building spatial index…', `${fieldsData.length.toLocaleString()} fields`);
   allocation = [];
 
-  // Filter out excluded polygons AND oversized polygons before building spatial index.
-  // Rationale: a real planted field is 0.5–5 ha at most. Polygons above 10 ha are
-  // either corrupt GPS boundaries or data entry errors. Allowing them into spatial
-  // matching causes cascade capture — a single 7-million-ha polygon can steal trees
-  // from thousands of legitimate fields. We exclude them analytically here regardless
-  // of whether they have been deactivated in Fieldforce.
-  const MAX_FIELD_HA = 10; // maximum plausible planted field size
-
-  const oversizedFields = fieldsData.filter(f =>
-    f.ring && !excludedFields.has(f.fieldId) && ringAreaHa(f.ring) > MAX_FIELD_HA
-  );
+  // Only manually excluded polygons are skipped — no size threshold.
+  // The allocation engine answers one question honestly:
+  // Is this tree's GPS coordinate inside its field polygon? Yes → Allocated. No → Outside.
+  // Large polygon detection and deactivation are separate diagnostic layers.
   const validFields = fieldsData.filter(f =>
-    f.ring && !excludedFields.has(f.fieldId) && ringAreaHa(f.ring) <= MAX_FIELD_HA
+    f.ring && !excludedFields.has(f.fieldId)
   );
   const skipped = fieldsData.filter(f => f.ring && excludedFields.has(f.fieldId));
 
-  if (oversizedFields.length || skipped.length) {
+  if (skipped.length) {
     setProgress(0, 'Building spatial index…',
-      `Excluded from matching: ${skipped.length} manually excluded · ${oversizedFields.length} oversized (>${MAX_FIELD_HA} ha) — cascade capture prevented`);
+      `Excluding ${skipped.length} manually excluded polygon${skipped.length > 1 ? 's' : ''}`);
     await new Promise(r => requestAnimationFrame(r));
   }
 
@@ -2544,7 +2537,7 @@ function updateKPIs() {
   const outside  = allocation.filter(r => !r.insidePolygon).length;
   const mismatch = allocation.filter(r => r.status && r.status.includes('mismatch')).length;
   const review   = allocation.filter(r => r.status && (r.status.includes('mismatch') || r.status === 'Outside polygon but field tagged')).length;
-  const oversized = fieldsData.filter(f => f.ring && ringAreaHa(f.ring) > 10).length;
+  const oversized = excludedFields.size;
 
   document.getElementById('kpiFields').textContent   = fieldsData.length;
   document.getElementById('kpiTrees').textContent    = treesData.length;
@@ -2553,7 +2546,7 @@ function updateKPIs() {
   document.getElementById('kpiMismatch').textContent = mismatch;
   document.getElementById('kpiReview').textContent   = review;
   const oversizedEl = document.getElementById('kpiOversized');
-  if (oversizedEl) oversizedEl.textContent = oversized;
+  if (oversizedEl) oversizedEl.textContent = oversized || '0';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
